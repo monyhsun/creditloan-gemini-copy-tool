@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Richart 信貸文案發想平台 (Gemini 版)</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  /* =========================================
+     CSS 變數與基礎設定
+     ========================================= */
+  :root {
+    --bg: #F5F4F0; --surface: #FFF; --border: #E2E0D8; --border-strong: #C8C6BC;
+    --text: #1A1916; --text-muted: #6B6960; --text-hint: #A8A69E;
+    --accent-bg: #1A1916; --accent-text: #F5F4F0;
+    --success-bg: #EDFAF3; --success-text: #1A7A4A;
+    --danger-bg: #FFF0F0; --danger-text: #CC2222;
+    --radius: 10px; --radius-sm: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Noto Sans TC', sans-serif; background: var(--bg); color: var(--text); font-size: 15px; line-height: 1.6; min-height: 100vh; }
+  
+  /* =========================================
+     排版與區塊
+     ========================================= */
+  header { background: var(--accent-bg); color: var(--accent-text); padding: 0 2rem; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .header-title { font-size: 14px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+  .header-sub { font-size: 12px; color: rgba(245,244,240,.5); font-family: 'DM Mono', monospace; }
+  main { max-width: 860px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; margin-bottom: 1rem; }
+  .card-title { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 1.25rem; display: flex; align-items: center; gap: 8px; }
+  .card-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  
+  /* =========================================
+     表單元素
+     ========================================= */
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field.full { grid-column: 1 / -1; }
+  label { font-size: 12px; font-weight: 500; color: var(--text-muted); letter-spacing: .03em; }
+  input[type="text"], input[type="password"] { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: 'Noto Sans TC', sans-serif; font-size: 14px; color: var(--text); background: var(--bg); outline: none; transition: border-color .15s; }
+  input[type="text"]:focus, input[type="password"]:focus { border-color: var(--text); }
+  input[type="password"] { font-family: 'DM Mono', monospace; letter-spacing: .05em; }
+  .hint { font-size: 11px; color: var(--text-hint); margin-top: 2px; line-height: 1.4; }
+  .key-row { display: flex; gap: 8px; }
+  .key-row input { flex: 1; }
+  
+  /* 自訂下拉選單樣式 */
+  .custom-select-wrap { position: relative; width: 100%; }
+  .custom-select-display { width: 100%; padding: 9px 36px 9px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: 'Noto Sans TC', sans-serif; font-size: 14px; color: var(--text); background: var(--bg); cursor: pointer; user-select: none; display: flex; align-items: center; justify-content: space-between; transition: border-color .15s; }
+  .custom-select-display:hover { border-color: var(--border-strong); }
+  .custom-select-display.open { border-color: var(--text); }
+  .custom-select-arrow { width: 12px; height: 12px; flex-shrink: 0; color: var(--text-muted); }
+  .custom-select-dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); z-index: 200; box-shadow: 0 4px 16px rgba(0,0,0,.08); overflow: hidden; display: none; max-height: 280px; overflow-y: auto; }
+  .custom-select-dropdown.open { display: block; }
+  .custom-select-option { padding: 9px 14px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: space-between; transition: background .1s; }
+  .custom-select-option:hover { background: var(--bg); }
+  .custom-select-option.selected { font-weight: 500; }
+  .del-btn { font-size: 11px; color: var(--text-hint); background: none; border: none; cursor: pointer; padding: 2px 6px; border-radius: 4px; display: none; }
+  .custom-select-option:hover .del-btn { display: block; }
+  .del-btn:hover { color: var(--danger-text) !important; background: var(--danger-bg) !important; }
+  .custom-select-add { display: flex; gap: 6px; padding: 8px 10px; border-top: 1px solid var(--border); }
+  .custom-select-add input { flex: 1; padding: 6px 10px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: 'Noto Sans TC', sans-serif; background: var(--bg); color: var(--text); outline: none; }
+  .custom-select-add input:focus { border-color: var(--text); }
+  .custom-select-add button { padding: 6px 12px; font-size: 13px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--text); cursor: pointer; white-space: nowrap; font-family: 'Noto Sans TC', sans-serif; }
+  .custom-select-add button:hover { background: var(--bg); }
+  
+  /* =========================================
+     按鈕與狀態
+     ========================================= */
+  .platform-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .platform-btn { border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 9px 4px; font-size: 13px; font-family: 'Noto Sans TC', sans-serif; color: var(--text-muted); background: var(--bg); cursor: pointer; text-align: center; user-select: none; transition: all .12s; }
+  .platform-btn:hover { border-color: var(--border-strong); color: var(--text); }
+  .platform-btn.active { background: var(--accent-bg); color: var(--accent-text); border-color: var(--accent-bg); font-weight: 500; }
+  .key-status { font-size: 12px; color: var(--success-text); background: var(--success-bg); border: 1px solid #B6EDD1; border-radius: var(--radius-sm); padding: 6px 10px; margin-top: 6px; display: none; }
+  .btn { padding: 9px 18px; border-radius: var(--radius-sm); font-family: 'Noto Sans TC', sans-serif; font-size: 14px; font-weight: 500; cursor: pointer; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); transition: all .12s; white-space: nowrap; }
+  .btn:hover { background: var(--bg); }
+  .btn-primary { width: 100%; padding: 13px; font-size: 15px; background: var(--accent-bg); color: var(--accent-text); border-color: var(--accent-bg); border-radius: var(--radius); margin-top: .5rem; letter-spacing: .03em; }
+  .btn-primary:hover { opacity: .88; background: var(--accent-bg); }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+  .counter-badge { font-size: 12px; color: var(--accent-bg); background: #EAE9E4; padding: 2px 8px; border-radius: 12px; margin-left: auto; font-weight: 500; letter-spacing: 0; }
+  .ab-test-active { background: #FDF9E6 !important; border-color: #EBD984 !important; }
+  
+  /* =========================================
+     結果呈現與 Loading
+     ========================================= */
+  .loading { text-align: center; padding: 2.5rem; color: var(--text-muted); font-size: 14px; }
+  .loading-dots::after { content: ''; animation: dots 1.2s steps(4, end) infinite; }
+  @keyframes dots { 0%, 20% { content: '' } 40% { content: '.' } 60% { content: '..' } 80%, 100% { content: '...' } }
+  .error { background: var(--danger-bg); color: var(--danger-text); border: 1px solid #F5CCCC; border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13px; }
+  .result-block { margin-bottom: 1.5rem; }
+  .platform-label { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; }
+  .result-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius-sm); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th { background: var(--bg); color: var(--text-muted); font-weight: 500; font-size: 12px; padding: 9px 14px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; line-height: 1.6; }
+  tr:last-child td { border-bottom: none; }
+  td:first-child { color: var(--text-muted); font-size: 12px; white-space: nowrap; width: 140px; font-family: 'DM Mono', monospace; }
+  .action-row { display: flex; gap: 8px; margin-top: 1rem; }
+  .action-row .btn { flex: 1; text-align: center; }
+  
+  @media(max-width:600px){ .field-grid { grid-template-columns: 1fr; } .platform-grid { grid-template-columns: repeat(3, 1fr); } main { padding: 1rem 1rem 3rem; } .field.full { grid-column: 1; } }
+</style>
+</head>
+<body>
+<header>
+  <span class="header-title">Richart 文案平台</span>
+  <span class="header-sub">信貸廣告文案發想工具 (Powered by Gemini)</span>
+</header>
+<main>
+  <!-- API 設定區 -->
+  <div class="card">
+    <div class="card-title">API 設定</div>
+    <div class="field">
+      <label>Gemini API Key</label>
+      <div class="key-row">
+        <input type="password" id="api-key" placeholder="AIzaSy..." autocomplete="off" />
+        <button class="btn" onclick="saveKey()">儲存</button>
+      </div>
+      <div class="key-status" id="key-status">已儲存，僅存在瀏覽器記憶體中，重新整理即清除</div>
+    </div>
+  </div>
+  
+  <!-- 文案設定區 -->
+  <div class="card">
+    <div class="card-title">切角與架構設定</div>
+    <div class="field-grid">
+      <div class="field"><label>信貸產品 (群組)</label><div id="product-wrap"></div></div>
+      <div class="field"><label>目標客群</label><div id="audience-wrap"></div></div>
+      <div class="field"><label>新舊戶設定</label><div id="customer-type-wrap"></div></div>
+      <div class="field"><label>痛點切角</label><div id="painpoint-wrap"></div></div>
+      
+      <div class="field">
+        <label>文案架構</label>
+        <div id="framework-wrap"></div>
+        <p class="hint">
+          • <b>AIDA</b>: 抓注意→引興趣→激慾望→促行動<br>
+          • <b>PAS</b>: 提出問題→放大痛點→解決方案<br>
+          • <b>FAB</b>: 產品特點→優點→對客好處<br>
+          • <b>Benefit over Feature</b>: 利益/好處優先溝通
+        </p>
+      </div>
+      
+      <div class="field">
+        <label>文案風格</label><div id="style-wrap"></div>
+      </div>
+      
+      <div class="field"><label>促購元素(贈品)</label><div id="promo-wrap"></div></div>
+      
+      <!-- A/B Test 與 組數整合區塊 -->
+      <div class="field full" style="border-top: 1px dashed var(--border); padding-top: 16px; margin-top: 4px;">
+        <div class="field-grid">
+          <div class="field">
+            <label style="color: #B2821A;">啟用 A/B Test？</label>
+            <div id="ab-toggle-wrap"></div>
+          </div>
+          <div class="field" id="ab-variable-container" style="display: none;">
+            <label style="color: #B2821A;">測試變因 (控制單一變數)</label>
+            <div id="ab-variable-wrap"></div>
+            <p class="hint">系統將固定其他所有設定，僅針對此變因產出 A/B 兩版高度對照的文案。</p>
+          </div>
+          <div class="field" id="variation-container">
+            <label>產出組數</label>
+            <div id="variation-wrap"></div>
+            <p class="hint">可一次產出多組不同切角的文案變化</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- UTM 設定區 -->
+      <div class="field full" style="margin-top: 12px;">
+        <label>廣告到達網址（若有填寫，將依規則自動產出 UTM）</label>
+        <input type="text" id="url" placeholder="https://tsbk.tw/..." />
+      </div>
+      <div class="field">
+        <label>素材名稱 (英文，供 UTM 使用)</label>
+        <input type="text" id="utm-name" placeholder="例如：fast, promo" />
+      </div>
+      <div class="field">
+        <label>上線日期 (YYYYMMDD，供 UTM 使用)</label>
+        <input type="text" id="utm-date" placeholder="例如：20250903" />
+      </div>
+    </div>
+  </div>
+  
+  <!-- 平台選擇區 -->
+  <div class="card">
+    <div class="card-title">
+      選擇平台 
+      <span class="counter-badge" id="platform-counter">選擇 0 個</span>
+    </div>
+    <div class="platform-grid">
+      <button class="platform-btn" data-p="Pmax">Pmax</button>
+      <button class="platform-btn" data-p="Meta/FB">Meta/FB</button>
+      <button class="platform-btn" data-p="LINELAP">LINELAP</button>
+      <button class="platform-btn" data-p="YouTube">YouTube</button>
+      <button class="platform-btn" data-p="推播">推播</button>
+      <button class="platform-btn" data-p="簡訊">簡訊</button>
+      <button class="platform-btn" data-p="BTS">BTS</button>
+      <button class="platform-btn" data-p="EDM">EDM</button>
+      <button class="platform-btn" data-p="DemandGen">DemandGen</button>
+    </div>
+  </div>
+  
+  <button class="btn btn-primary" id="gen-btn" onclick="generate()">產出文案</button>
+  
+  <!-- 產出結果區 -->
+  <div id="result-area" style="display:none;margin-top:1rem;">
+    <div class="card">
+      <div class="card-title">文案產出結果</div>
+      <div id="result-content"></div>
+      
+      <p class="hint" style="margin-top: 12px; margin-bottom: 12px;">
+        💡 備註：依據「1個中文字 = 2個半形字元」的規範，上方括號內的數字為精準計算邏輯結果（中文字與全形符號算 1 字，半形英數字算 0.5 字，最後無條件進位）。Excel 下載後的字數則為原生的 LEN() 公式長度。
+      </p>
+      
+      <div class="action-row">
+        <button class="btn" onclick="downloadExcel()">下載 Excel</button>
+        <button class="btn" onclick="document.getElementById('result-area').style.display='none'">清除結果</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+/**
+ * ============================================================================
+ * 【1. 常數與設定區】 - 維護 Prompt 與平台規格請改這裡
+ * ============================================================================
+ */
+const GEMINI_MODEL = 'gemini-2.5-flash'; // 使用的 Gemini 模型版本
+
+const PLATFORM_SPECS = {
+  'Pmax': '標題15字x5組(1組含台新Richart信貸)、長標題45字(含台新Richart信貸)、短說明30字、長說明45字x4則(1則含台新Richart信貸、1則放短版警語)。',
+  'DemandGen': '標題20字x5組(1組含台新Richart信貸)、長說明45字x5則(1則含台新Richart信貸、1則放短版警語)。',
+  'Meta/FB': '標題12字、內文200字(含長版警語)、連結說明15字。',
+  'YouTube': '長標題45字、說明欄放短版警語(獨立佔滿)、行動號召固定「立即申請」、標題7字(含台新Richart信貸)。',
+  'LINELAP': '大圖標題10字、內文35字(含台新Richart信貸)、小圖標題10字、長標題17字。',
+  '推播': '標題7字、內文100字(含推播版警語)。輸出格式：【標題】內文',
+  '簡訊': '標題7字、內文70字(含簡訊警語，不含帶有UTM的連結)。輸出格式：【標題】內文+連結',
+  'BTS': 'APP首頁標題7字、Bottom Sheet主標15字、內容50字、Action固定「立即申請」、備註100字(放長版警語)。',
+  'EDM': '信件主旨12字(不需警語)。'
+};
+
+const SYSTEM_PROMPT_BASE = `你是 Richart 信貸廣告文案專家。嚴格遵守以下所有規範：
+
+【一、最高指導原則與平台限制】
+1. 絕對只為用戶指定的平台產出文案！
+2. 字符限制：Pmax、DemandGen、YouTube 絕對不能使用驚嘆號(!)、斜線(/)等符號。只能用半形逗號、句號或空白。
+3. 字數計算：1個中文字 = 2個半形字元。所有大於 999 的數字必須加千分位(如: 5,000)。
+4. 品牌規範：Pmax/DemandGen 標題必須有1則含「台新Richart信貸」；長說明必須有1則含「台新Richart信貸」。
+
+【二、各平台專屬警語與動態利率規範】
+1. 基礎利率邏輯 (APR Selection)
+  依據產品額度與受眾對象，自動切換百分率區間：
+  限定小額： 4.98%-14.99%
+  大額或不分大小額：
+    舊戶限定： 2.88%-16.39%
+    新戶 / 不分新舊戶： 2.1%-16.39%
+2. 警語觸發邏輯 (Disclaimer Trigger)
+  檢查文案內容，自動組合結尾文字：
+  提到「時間」： 以實際撥款時間為準
+  提到「利率/期數/手續費」： 以實際審核條件為準
+  兩者皆提到： 以實際審核條件及撥款時間為準
+3. 動態試算警語擴充 (Trial Calculation Disclaimer)
+  若文案提及「月付金」或「月付」：警語最後必須加上「，月付以x%手續費x元還款x期試算」
+  若文案提及「日付金」或「日付」：警語最後必須加上「，日付以x%手續費x元還款X期每月30日試算」
+  利率依據產品額度與受眾對象，自動切換百分率；手續費與期數依據產品自動切換手續費金額
+  限定小額： 399元、24期
+  大額或不分大小額： 0元、120期
+
+4. 各平台格式規範 (Platform Standards) 注意：警語字數須計入總字數限制。
+  A.用於 Pmax、DemandGen、YouTube、LINELAP、推播、簡訊
+    格式：不使用冒號，且全程不可有空格。
+        範例：*總費用年百分率2.1%-16.39%*以實際審核條件及撥款時間為準，月付以2.1%手續費0元還款120期試算
+  B. EDM 規範
+    信件主旨： 絕對不需要加警語。
+
+【三、文案架構要求】
+- 必須嚴格採用用戶指定的「文案架構」與「文案風格」進行撰寫。
+- 若客群為卡循族、急用錢的客群：絕對不用最低利率做為主要切角(如2.1%)，以其他產品特色切入。
+- 若文案中要提到利率，要寫單一利率，而非寫總費用年百分率，除了科技業專案外，利率都應該是x.x%起或最低x.x%，如：2.88%起
+- 若文案中要提到利率，「起」字、「最低」2擇1，如：2.1%起或最低2.1%
+- 提到「金額」都要有單位(元)，如：1萬元即可貸款、1萬元-500萬元、借50萬元
+- 小額素材不以3.99%利率為主要切角，因為沒有2.1%看起來厲害
+
+【四、字數嚴格限制（致命錯誤）】
+AI 模型經常犯字數超標的錯誤。請你在生成每一句文案時，務必嚴格計算字數！
+(1個中文字與全形符號 = 1字，半形英數字 = 0.5字，無條件進位)
+寧可少寫幾個字，也【絕對不能超過】規定的字數上限！例如規定「15字」，請盡量控制在 13~14 字。超出字數會導致廣告系統崩潰。
+
+【五、回傳格式】
+必須只回傳乾淨的 JSON 格式資料，不要有任何 Markdown 標記或其他廢話，格式如下：
+{"results":[{"platform":"平台名稱","fields":[{"name":"欄位名稱","content":"文案內容"}]}]}
+`;
+
+const PAINPOINT_FACTS_PROMPT = `
+【六、痛點對應事實清單】
+撰寫文案時，請嚴格比對使用者選擇的「痛點切角」，並「只能」使用以下對應的具體事實與數字，絕對不可捏造，但可以換句話說。請依據指定的「文案風格」靈活改寫，切勿像機器人般條列：
+- 覺得貴：大額主打最低利率 2.1% 起、最長可分 120 期、手續費最低 0 元起、借50萬最低月付4,623元(不到5,000元)／每日最低 149 元（以31日計）、申貸輸入【RR2026】成功撥款送最高10,000點台新Point、申貸輸入【RR2026】成功撥款送最高價值10,000元好禮。
+        小額主打手續費均一價 399 元、借 1 萬元每期最低還款 434 元／每日最低 14 元（以31日計）、借 10 萬元每期最低還款 4,342 元／每日最低 140 元（以31日計）。
+- 只想借小額：主打 1 萬元即可貸、14萬(含)以下利率 3.99% 起且手續費均一價 399 元、借 1 萬元每期最低還款 434 元／每日最低 14 元（以31日計）、借 10 萬元每期最低還款 4,342 元／每日最低 140 元（以31日計）。
+- 不想綁約：主打 14萬(含)以下免綁約、提前還款免違約金。
+- 門檻高：主打 APP 線上申辦、免臨櫃、上班族符合資格免上傳財力證明、有勞保即可貸、年收24萬元以上即可貸／月收2萬元以上即可貸(小額)、年收30萬以上即可貸／月收2.5萬元以上即可貸(大額)。
+- 急用錢：主打最快 3 分鐘申請、核貸後最快 18 分鐘撥款、14萬元以下半夜/假日/凌晨/周末都能撥款、當天申請最快當天撥款、線上即可對保。
+- 怕被他人知道：主打全程 APP 24H 線上申請，無需臨櫃，隱私度高。
+- 多筆借款管理混亂：主打轉貸／代償服務輕鬆搞定，整合負債降低月付壓力。
+`;
+
+const STYLE_PROMPT_GUIDELINES = `
+【七、文案風格與撰寫要求】
+請針對目標受眾與痛點，依據用戶選擇的文案風格，參考以下規範與歷史範例來撰寫：
+
+1. 朋友對話感
+- 想像在 LINE 聊天。多用「我、你」，加入自然語助詞（欸、啦、哈、嘿）或一些用LINE聯繫朋友會說的開頭(有空嗎?在嗎?)，也可以有一些顏文字，口吻要像「懂你的朋友」在分享好康或資訊，拒絕官腔。
+- [範例1] 有空嗎？之前打給你沒接，只是想告訴你，Richart信貸最低2.1%起，最長可分120期還款，線上就可輕鬆申貸，有資金需求不用等人聯絡你喔，總費用年百分率2.10%~16.39%以實際審核條件為準
+
+2. 親切感
+- 側重「陪伴」與「減壓」，強調「我來搞定」的體貼感，訴求美好願景。
+- [範例1] Hi,居家風格由你做主，資金週轉我來搞定》核貸50萬元，10年還款最低月付只要4,623元起》Richart信貸總費用年百分率為：2.10%~16.39% 
+
+3. 幽默感
+- 結合社群最火紅的迷因梗、流行語或改編洗腦歌詞（例如：阿姨我不想努力了、終於看開愛回不來等），語氣要有趣，讓受眾覺得品牌很懂玩。禁止使用過時老梗。
+- [範例1] 最怕空氣突然安靜...尤其是跟朋友急著調錢的那瞬間>< Richart信貸申請最快3分鐘，核貸後最快18分鐘撥款，需要錢不用欠人情>>總費用年百分率2.10%~16.39%以實際審核條件為準
+
+4. 賈伯斯感
+- 追求極簡與哲學高度。多用短句、斷行，強調「產品即藝術」與「本該如此」的霸氣。
+- [範例1] 設計一個家，需要一千個決定，但資金只需要Richart信貸，還款最長120期，月付4,623元起，讓你輕鬆創造你的世界>>總費用年百分率2.10%~16.39%以實際審核條件為準，月付以2.1%手續費0元還款120期試算
+
+5. 直接促銷
+- 直接溝通產品優惠與行動呼籲，講求效率與轉換。
+- [範例1] 你有其他銀行的信貸嗎？試試Richart能否幫你借低還高，申請不用錢，喜歡再撥款，輸入【RR2026】撥款後享最高 10,000 點台新Point>>總費用年百分率2.10%~16.39%以實際審核條件為準
+`;
+
+/**
+ * ============================================================================
+ * 【2. UI 元件與共用函式區】 - 畫面互動邏輯
+ * ============================================================================
+ */
+
+// API Key 變數與儲存邏輯
+let apiKey = '', resultData = [];
+function saveKey() {
+  const v = document.getElementById('api-key').value.trim();
+  if (!v.startsWith('AIza')) {
+      alert('格式不對，請確認 Key 是否正確（Gemini API Key 通常以 AIza 開頭）');
+      return;
+  }
+  apiKey = v;
+  document.getElementById('api-key').value = '••••••••••••••••••••••••••••••';
+  document.getElementById('key-status').style.display = 'block';
+}
+
+// 建立自訂下拉選單的通用函式
+function createSelect(containerId, options, onChangeCallback = null) {
+  const wrap = document.getElementById(containerId);
+  
+  // 👉 為了避免 CSS 選擇器解析異常，這裡直接寫入 inline style 強制 relative 定位！
+  wrap.style.position = 'relative';
+  wrap.classList.add('custom-select-wrap'); 
+
+  let selected = options[0];
+  
+  const display = document.createElement('div');
+  display.className = 'custom-select-display';
+  
+  const lbl = document.createElement('input');
+  lbl.type = 'text';
+  lbl.value = selected;
+  lbl.style.cssText = 'border:none;outline:none;background:transparent;width:100%;font-family:inherit;font-size:inherit;color:inherit;';
+  lbl.addEventListener('input', e => {
+      selected = e.target.value;
+      if(onChangeCallback) onChangeCallback(selected);
+  });
+  
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 12 8');
+  svg.classList.add('custom-select-arrow');
+  svg.innerHTML = '<path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>';
+  
+  display.appendChild(lbl);
+  display.appendChild(svg);
+  
+  const dd = document.createElement('div');
+  dd.className = 'custom-select-dropdown';
+  let isOpen = false;
+  
+  function renderOpts() {
+    dd.innerHTML = '';
+    options.forEach((opt, i) => {
+      const item = document.createElement('div');
+      item.className = 'custom-select-option' + (opt === selected ? ' selected' : '');
+      const s = document.createElement('span');
+      s.textContent = opt;
+      item.appendChild(s);
+      
+      if (i > 0 && !['關閉','開啟'].includes(opt)) { 
+        const del = document.createElement('button');
+        del.className = 'del-btn';
+        del.textContent = '刪除';
+        del.onclick = (e) => {
+            e.stopPropagation();
+            options.splice(i, 1);
+            if (selected === opt) {
+                selected = options[0];
+                lbl.value = selected;
+                if(onChangeCallback) onChangeCallback(selected);
+            }
+            renderOpts();
+        };
+        item.appendChild(del);
+      }
+      
+      item.addEventListener('click', () => {
+          selected = opt;
+          lbl.value = selected;
+          if(onChangeCallback) onChangeCallback(selected);
+          close();
+      });
+      dd.appendChild(item);
+    });
+    
+    if (containerId !== 'ab-toggle-wrap' && containerId !== 'variation-wrap') {
+        const addRow = document.createElement('div');
+        addRow.className = 'custom-select-add';
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.placeholder = '新增自訂選項...';
+        const abtn = document.createElement('button');
+        abtn.textContent = '新增';
+        abtn.onclick = () => {
+            const v = inp.value.trim();
+            if (!v) return;
+            options.push(v);
+            selected = v;
+            lbl.value = v;
+            inp.value = '';
+            if (onChangeCallback) onChangeCallback(selected);
+            renderOpts();
+            close();
+        };
+        inp.addEventListener('keydown', e => { if (e.key === 'Enter') abtn.click(); });
+        addRow.appendChild(inp);
+        addRow.appendChild(abtn);
+        dd.appendChild(addRow);
+    }
+  }
+  
+  function close() {
+      isOpen = false;
+      dd.classList.remove('open');
+      display.classList.remove('open');
+  }
+  
+  lbl.addEventListener('click', e => e.stopPropagation());
+  lbl.addEventListener('focus', e => { isOpen = true; dd.classList.add('open'); display.classList.add('open'); });
+  svg.addEventListener('click', e => { e.stopPropagation(); isOpen = !isOpen; dd.classList.toggle('open', isOpen); display.classList.toggle('open', isOpen); });
+  display.addEventListener('click', e => { if (e.target !== lbl) lbl.focus(); });
+  document.addEventListener('click', e => { if (!wrap.contains(e.target)) close(); });
+  
+  renderOpts();
+  wrap.appendChild(display);
+  wrap.appendChild(dd);
+  
+  return {
+    getValue: () => selected,
+    getDisplayElement: () => display
+  };
+}
+
+// 初始化下拉選單實體
+const productSel = createSelect('product-wrap', ['不分大小額','大額','小額']);
+const audienceSel = createSelect('audience-wrap', ['有他行信貸者','卡循族','薪轉戶','科技業族群','急需資金者','小額周轉需求者','投資族','裝潢族','購車族','日常消費族','已還款一段時間的既有戶','已結清貸款的既有戶']);
+const customerTypeSel = createSelect('customer-type-wrap', ['不分新舊戶','新戶','舊戶']);
+const painpointSel = createSelect('painpoint-wrap', ['覺得貴','只想借小額','門檻高','急用錢','怕被他人知道','多筆借款管理混亂','不想綁約']);
+const frameworkSel = createSelect('framework-wrap', ['PAS (問題→痛點→解方)', 'AIDA (注意→興趣→慾望→行動)', 'FAB (特點→優點→好處)', 'Benefit over Feature (好處優先)']);
+const styleSel = createSelect('style-wrap', ['直接促銷', '朋友對話感', '親切感', '賈伯斯感', '幽默感']);
+const promoSel = createSelect('promo-wrap', ['不加','輸入【RR2026】撥款後享最高10,000點台新Point']);
+const variationSel = createSelect('variation-wrap', ['1組','2組','3組']);
+const abVariableSel = createSelect('ab-variable-wrap', ['有無最低月付','有無行動呼籲 (CTA)','有無最低手續費','有無額度','有無免上傳財力證明']);
+
+// A/B Test 切換顯示邏輯
+const abToggleSel = createSelect('ab-toggle-wrap', ['關閉', '開啟'], (val) => {
+    const varContainer = document.getElementById('variation-container');
+    const abVarContainer = document.getElementById('ab-variable-container');
+    const abToggleDisplay = abToggleSel.getDisplayElement();
+    
+    if (val === '開啟') {
+        varContainer.style.display = 'none';
+        abVarContainer.style.display = 'flex';
+        abToggleDisplay.classList.add('ab-test-active');
+    } else {
+        varContainer.style.display = 'flex';
+        abVarContainer.style.display = 'none';
+        abToggleDisplay.classList.remove('ab-test-active');
+    }
+});
+
+// 平台按鈕與計數器邏輯
+const platformCounter = document.getElementById('platform-counter');
+function updatePlatformCount() {
+  const count = document.querySelectorAll('.platform-btn.active').length;
+  platformCounter.textContent = count === 0 ? '尚未選擇' : `選擇 ${count} 個`;
+}
+
+document.querySelectorAll('.platform-btn').forEach(btn => btn.addEventListener('click', () => {
+  btn.classList.toggle('active');
+  updatePlatformCount();
+}));
+
+// 初始化
+updatePlatformCount();
+
+// 取得選擇的平台陣列
+function getSelectedPlatforms() {
+    return [...document.querySelectorAll('.platform-btn.active')].map(b => b.dataset.p);
+}
+
+// 計算字數 (中文字1字，半形0.5字)
+function getCharCount(str) {
+  if (!str) return 0;
+  let len = 0;
+  for (let i = 0; i < str.length; i++) {
+    len += str.charCodeAt(i) > 255 ? 1 : 0.5;
+  }
+  return Math.ceil(len);
+}
+
+/**
+ * ============================================================================
+ * 【3. 核心邏輯區】 - 串接 API、生成 Prompt、解析資料、下載 Excel
+ * ============================================================================
+ */
+
+// 動態組裝 UTM 規則字串
+function buildUtmPrompt(productGroup, utmName, utmDate) {
+    let groupCode = '';
+    if (productGroup === '大額') groupCode = 'b';
+    else if (productGroup === '小額') groupCode = 's';
+    
+    return `
+【八、UTM 產出規則】
+若用戶有提供到達網址，外部廣告及特定內部渠道需獨立新增一列欄位名稱為「最終到達網址」並組裝 UTM：
+格式：[網址]?utm_source=[來源]&utm_medium=[媒介]&utm_campaign=richart_${groupCode}loan${utmName}_${utmDate}&utm_content=[內容]
+- 來源(utm_source)與媒介(utm_medium)：
+  - Pmax: utm_source=google, utm_medium=pmax
+  - DemandGen: utm_source=google, utm_medium=demendgen
+  - Meta/FB: utm_source=facebook, utm_medium=linkad
+  - YouTube: utm_source=youtube, utm_medium=videoad
+  - LINELAP: utm_source=line, utm_medium=linelapad
+  - 推播: utm_source=richart, utm_medium=push
+  - EDM: utm_source=richart, utm_medium=edm
+  - 簡訊: utm_source=richart, utm_medium=sms (注意：簡訊的連結必須帶有此 UTM 並放在內文最後)
+- 內容(utm_content) 條件規則：
+  - 若為 推播、簡訊、BTS、GSM 等渠道：utm_content=textlink
+  - 若為 EDM：utm_content=button
+  - 其他其餘渠道：utm_content=banner
+⚠️ 網址無空白警告：最終輸出的到達網址與 UTM 字串中【絕對不可以有任何空格 (Space)】。符號（?、=、&）前後必須緊密相連。
+`;
+}
+
+// 執行主程式發送 API
+async function generate() {
+  if (!apiKey) {
+      alert('請先輸入並儲存 Gemini API Key');
+      return;
+  }
+  const platforms = getSelectedPlatforms();
+  if (!platforms.length) {
+      alert('請至少選擇一個平台才能產出！');
+      return;
+  }
+  
+  // 取得 UI 參數
+  const product = productSel.getValue();
+  const audience = audienceSel.getValue();
+  const customerType = customerTypeSel.getValue();
+  const painpoint = painpointSel.getValue();
+  const framework = frameworkSel.getValue();
+  const style = styleSel.getValue();
+  const promo = promoSel.getValue();
+  const isAbTest = abToggleSel.getValue() === '開啟';
+  const abVariable = abVariableSel.getValue();
+  const numGroups = isAbTest ? 2 : (parseInt(variationSel.getValue()) || 1);
+  
+  // 處理 URL 相關變數
+  const url = document.getElementById('url').value.trim().replace(/\s+/g, '');
+  const utmName = (document.getElementById('utm-name').value || 'promo').trim().replace(/\s+/g, '_');
+  const utmDate = (document.getElementById('utm-date').value || new Date().toISOString().slice(0,10).replace(/-/g,'')).trim().replace(/\s+/g, '');
+
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = true;
+  btn.textContent = '產出中...';
+  document.getElementById('result-area').style.display = 'block';
+  document.getElementById('result-content').innerHTML = '<div class="loading"><span class="loading-dots">Gemini 正在發想文案</span></div>';
+  
+  const selectedSpecs = platforms.map(p => `- ${p}：${PLATFORM_SPECS[p] || '依平台規格'}`).join('\n');
+  
+  // 決定多組或 A/B Test 的 Prompt
+  let multiGroupPrompt = "";
+  if (isAbTest) {
+      multiGroupPrompt = `
+【九、A/B Test 嚴格規範】
+使用者已開啟 A/B Test 模式！測試變因為：「${abVariable}」。
+請為每一個勾選的平台，剛好產出 2 組文案（A版 與 B版），合併在同一個 fields 陣列中回傳。
+- 【A版】必須包含或符合該變因的正向條件。
+- 【B版】必須不包含或符合該變因的反向條件。
+- ⚠️ 極度重要：為了控制變因，A版與B版的「標題、句型架構、長度、主視覺感」必須「幾乎完全一樣」！除了測試變因相關的幾個字詞差異之外，其餘文案必須複製貼上。絕對不能發散變成兩篇截然不同的文案。
+- 輸出時，請務必在欄位名稱最前面加上版別，例如："【A版】標題"、"【A版】內文" 以此類推。`;
+  } else if (numGroups > 1) {
+      multiGroupPrompt = `
+【九、多組產出規範】
+⚠️ 注意：要求產出 ${numGroups} 組不同的文案！請將同一平台的多組文案合併在同一個 platform 的 fields 陣列中。請務必在欄位名稱前面加上組別（例如："【第1組】標題"、"【第2組】標題"）。`;
+  }
+
+  // 組合最終 System Prompt (已加入痛點對照清單)
+  const finalSystemPrompt = SYSTEM_PROMPT_BASE + PAINPOINT_FACTS_PROMPT + STYLE_PROMPT_GUIDELINES + buildUtmPrompt(product, utmName, utmDate) + multiGroupPrompt;
+
+  const userPrompt = `目標客群：${audience} (${customerType})\n痛點切角：${painpoint}\n信貸產品(群組)：${product}\n文案架構：${framework}\n文案風格：${style}\n促購元素(贈品)：${promo==='不加'?'無':promo}\n到達網址：${url||'未提供'}\n\n【請務必只為以下 ${platforms.length} 個平台產出文案，忽略並剔除其他平台】：\n${selectedSpecs}`;
+  
+  try {
+    // 改為 Gemini API 請求路徑
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+    
+    const payload = {
+      systemInstruction: {
+        parts: [{ text: finalSystemPrompt }]
+      },
+      contents: [{
+        role: "user",
+        parts: [{ text: userPrompt }]
+      }],
+      generationConfig: {
+        responseMimeType: "application/json" // 強制回傳 JSON，提高解析穩定度
+      }
+    };
+
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+    
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
+    
+    // 解析 Gemini 專用回傳路徑
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+    
+    resultData = parsed.results;
+    renderResults(resultData);
+  } catch(e) {
+    document.getElementById('result-content').innerHTML = `<div class="error">產出失敗：${e.message}</div>`;
+  }
+  
+  btn.disabled = false;
+  btn.textContent = '重新產出';
+}
+
+// 渲染畫面結果
+function renderResults(results) {
+  document.getElementById('result-content').innerHTML = results.map(r => `
+    <div class="result-block">
+        <div class="platform-label">${r.platform}</div>
+        <div class="result-table-wrap">
+            <table>
+                <thead><tr><th>欄位</th><th>文案</th></tr></thead>
+                <tbody>
+                    ${r.fields.map(f => `<tr><td>${f.name} <span style="color:var(--text-hint); font-weight:normal;">(${getCharCount(f.content)})</span></td><td>${f.content}</td></tr>`).join('')}
+                </tbody>
+            </table>
+        </div>
+    </div>`).join('');
+}
+
+// 下載 Excel 邏輯
+function downloadExcel() {
+  if (!resultData.length) {
+      alert('還沒有文案可以下載');
+      return;
+  }
+  if (typeof XLSX === 'undefined') {
+      alert('Excel 套件載入失敗，請確認網路或重新整理網頁。');
+      return;
+  }
+  
+  try {
+    const wb = XLSX.utils.book_new();
+    resultData.forEach(r => {
+      // 標題列新增字數
+      const rows = [['欄位', '文案', '字數']];
+      r.fields.forEach((f, index) => {
+        // index 從 0 開始，資料在 Excel 從第 2 列開始，所以是 B(index + 2)
+        rows.push([f.name, f.content, { f: `LEN(B${index + 2})` }]);
+      });
+      
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      ws['!cols'] = [{wch:22}, {wch:65}, {wch:10}];
+      
+      const safeSheetName = r.platform.replace(/[\\/*?:[\]]/g, '_').slice(0,31);
+      XLSX.utils.book_append_sheet(wb, ws, safeSheetName);
+    });
+    
+    XLSX.writeFile(wb, `Richart文案_${new Date().toISOString().slice(0,10)}.xlsx`);
+  } catch (e) {
+    alert('下載失敗：' + e.message);
+  }
+}
+</script>
+</body>
+</html>
