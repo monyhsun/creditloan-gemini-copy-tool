@@ -221,7 +221,7 @@
 // ============================================================================
 
 // ✅ 修正：統一使用 gemini-2.0-flash（支援 Google Search 工具）
-const GEMINI_MODEL = 'gemini-2.5-flash-preview-04-17';
+const GEMINI_MODEL = 'gemini-3-flash-preview';
 
 const PLATFORM_SPECS = {
   'Pmax': '標題15字x5組(1組含台新Richart信貸)、長標題45字(含台新Richart信貸)、短說明30字、長說明45字x4則(1則含台新Richart信貸、1則放短版警語)。',
@@ -450,7 +450,7 @@ async function fetchHumorInsights(humorMaterial) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents: [{ role: 'user', parts: [{ text: searchPrompt }] }],
-      tools: [{ googleSearch: {} }]
+      tools: [{ google_search: {} }]
       // ✅ 不加 responseSchema，這樣才能讓搜尋工具正常運作
     })
   });
