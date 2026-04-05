@@ -161,9 +161,9 @@
       <!-- 第三列 -->
       <div class="field"><label>促購元素(贈品)</label><div id="promo-wrap"></div></div>
       
-      <!-- 👉 動態出現的幽默感素材輸入框 -->
+      <!-- 👉 動態出現的幽默感素材輸入框 (加上搜尋提示) -->
       <div class="field span-2" id="humor-material-container" style="display: none;">
-        <label style="color: #1A7A4A;">內容素材 (幽默感專用)</label>
+        <label style="color: #1A7A4A;">內容素材 (幽默感專用 - 將啟動 AI 網路搜尋)</label>
         <input type="text" id="humor-material" placeholder="你想寫的方向、用甚麼梗，提供越多素材生成品質越好" />
       </div>
       
@@ -248,7 +248,8 @@
  * 【1. 常數與設定區】 - 維護 Prompt 與平台規格請改這裡
  * ============================================================================
  */
-const GEMINI_MODEL = 'gemini-2.5-flash'; // 使用的 Gemini 模型版本
+// 👉 更新為支援搜尋技術的版本
+const GEMINI_MODEL = 'gemini-2.5-flash-preview-09-2025'; 
 
 const PLATFORM_SPECS = {
   'Pmax': '標題15字x5組(1組含台新Richart信貸)、長標題45字(含台新Richart信貸)、短說明30字、長說明45字x4則(1則含台新Richart信貸、1則放短版警語)。',
@@ -617,11 +618,14 @@ async function generate() {
   const abVariable = abVariableSel.getValue();
   const numGroups = isAbTest ? 2 : (parseInt(variationSel.getValue()) || 1);
   
-  // 👉 抓取內容素材
+  // 👉 抓取內容素材，並在觸發幽默感時準備搜尋用的獨立指令
   const humorMaterial = document.getElementById('humor-material').value.trim();
   let humorText = "";
+  let searchInstruction = ""; // 專供 Search Grounding 用的指令
+  
   if (style === '幽默感' && humorMaterial) {
       humorText = `\n內容素材：${humorMaterial} (請將此梗自然融入)`;
+      searchInstruction = `\n\n【十一、特別指令：幽默感搜尋增強】\n你必須執行 Google 搜尋，針對用戶提供的素材，尋找目前網路（特別是 Threads、Dcard 或各大社群平台）上最紅的迷因、流行語或時事。將搜尋到的「梗」轉化為信貸廣告，語氣要像社群玩家，而非傳統死板的銀行廣告。`;
   }
   
   // 處理 URL 相關變數
@@ -668,8 +672,8 @@ async function generate() {
 👉 執行方式：在每一個平台 (platform) 的 fields 陣列【最後一筆】，強制新增一個欄位，name 命名為「【AI 檢視回饋】」，content 簡述你的品質檢視結果與自我評分。
 `;
 
-  // 組合最終 System Prompt
-  const finalSystemPrompt = SYSTEM_PROMPT_BASE + PAINPOINT_FACTS_PROMPT + STYLE_PROMPT_GUIDELINES + buildUtmPrompt(product, utmName, utmDate) + multiGroupPrompt + aiReviewPrompt;
+  // 組合最終 System Prompt (加入搜尋指令)
+  const finalSystemPrompt = SYSTEM_PROMPT_BASE + PAINPOINT_FACTS_PROMPT + STYLE_PROMPT_GUIDELINES + buildUtmPrompt(product, utmName, utmDate) + multiGroupPrompt + aiReviewPrompt + searchInstruction;
 
   const userPrompt = `目標客群：${audience} (${customerType})\n痛點切角：${painpoint}\n信貸產品(群組)：${product}\n文案架構：${framework}\n文案風格：${style}${humorText}\n促購元素(贈品)：${promo==='不加'?'無':promo}\n到達網址：${url||'未提供'}\n\n【請務必只為以下 ${platforms.length} 個平台產出文案，忽略並剔除其他平台】：\n${selectedSpecs}`;
   
@@ -717,6 +721,11 @@ async function generate() {
         }
       }
     };
+
+    // 👉 當風格是幽默感且有提供素材時，啟動 Google Search 工具
+    if (style === '幽默感' && humorMaterial) {
+        payload.tools = [{ google_search: {} }];
+    }
 
     const res = await fetch(apiUrl, {
       method: 'POST',
