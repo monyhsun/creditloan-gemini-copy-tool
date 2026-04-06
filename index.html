@@ -231,6 +231,7 @@ const PRODUCT_CONFIG = {
     fee: '0',         feePromo: '0元起 (或 最低0元)',                    // 有起
     period: '120', 
     disclaimerApr: '2.99%-4.23%',
+    specialRule: '⚠️ 科技業專屬鐵律：文案內容「必須」同時包含「科技製造業」與「2.99%方案」這兩組關鍵字。'
   },
   '小額': {
     aprBase: '3.99%', aprPromo: '3.99%起 (或 最低3.99%)',                // 有起
@@ -601,7 +602,7 @@ async function generate() {
   // 注入風格專屬的角色設定
   const personaPrompt = `【角色設定】\n${STYLE_PERSONAS[style] || STYLE_PERSONAS['直接促銷']}\n\n`;
 
-  // 修改此處：強制置入「起/最低」規範邏輯
+  // 修改此處：強制置入「起/最低」規範邏輯，並串接特殊產品鐵律
   const prodPrompt = `
 【動態產品參數與用字規範（嚴格套用，不得偏離）】
 - 產品線：${prod}
@@ -611,7 +612,7 @@ async function generate() {
 - 內文提及「月付/日付金額」的寫法規範：務必加上「起」或「最低」（例如：月付4,623元起）
 - 最長期數：${conf.period}期
 - 警語月付試算：以${conf.aprBase}手續費${conf.fee}元還款${conf.period}期試算
-- 警語日付試算：以${conf.aprBase}手續費${conf.fee}元還款${conf.period}期每月30日試算`;
+- 警語日付試算：以${conf.aprBase}手續費${conf.fee}元還款${conf.period}期每月30日試算${conf.specialRule ? '\n\n' + conf.specialRule : ''}`;
 
   const multiGroupPrompt = isAbTest
     ? `\n【A/B Test 模式】測試變因：「${abVariableSel.getValue()}」。產出 A版與 B版，除變因相關字詞外，其餘架構幾乎完全一致。欄位名稱前加【A版】或【B版】。\n⚠️【UTM 區分規定】A版與B版若有附上網址，必須在 UTM 的 utm_content 參數後方加上「_a_[A版變因簡寫]」與「_b_[B版變因簡寫]」。簡寫請你依據測試變因，以全小寫英文自行決定（例如變因為有無贈品，可寫成 _a_ygift 與 _b_ngift）。`
