@@ -126,7 +126,7 @@
 <body>
 <header>
   <span class="header-title">Richart 文案平台</span>
-  <span class="header-sub">MarTech 引擎 v4.3 (完整還原指令版) · gemini-3-flash-preview</span>
+  <span class="header-sub">MarTech 引擎 v4.3 (穩定下載版) · gemini-3-flash-preview</span>
 </header>
 <main>
 
@@ -206,7 +206,7 @@
         </div>
       </div>
       <div class="style-chip-container" id="style-chip-container">
-        <span class="hint" id="chip-empty-hint" style="margin:auto; color:var(--text-hint);">目前尚未加入任何風格，請從上方選擇並加入。</span>
+        <span class="hint" id="chip-empty-hint" style="margin:auto; color:var(--text-hint);">目前尚未加入任何風格。</span>
         <!-- 動態標籤 -->
       </div>
     </div>
@@ -297,24 +297,22 @@ const PLATFORM_SPECS = {
 const STYLE_OPTIONS = ['直接促銷', '朋友對話感', '親切感', '幽默感', '賈伯斯感'];
 
 const STYLE_PERSONAS = {
-  '朋友對話感': '你是一個正向、活潑、有親和力、講話直接、像過來人一樣的理財婆婆媽媽。偶愛分享小道消息，講話不帶推銷感，就像在和認識多年的老友分享好消息。',
-  '親切感': '你是一個正向、溫暖、體貼、充滿同理心的理財顧問。總是站在客戶的角度思考，強調「陪伴」與「解決困難」，用語溫柔且具體，讓人感到安心。',
-  '幽默感': '你是一個懂玩、幽默、每天掛在社群平台上的迷因大師兼行銷高手。擅長透過融合、改編、諧音梗將社群熱門梗、流行語巧妙結合客戶痛點與產品特色，讓收到訊息的客戶感覺有趣且不尷尬。',
-  '賈伯斯感': '你是一個極簡、自信、客戶體驗至上、擁有高度的意見領袖。說話帶有霸氣與「本該如此」的確信感，句子簡短有力，不廢話，直指事物本質。',
-  '直接促銷': '你是一個追求高效轉換、數字說話的行銷專家。說話直白、不繞圈子，精準強調產品優惠、數字與行動呼籲，用語專業精煉。'
+  '朋友對話感': '你是一個正向、活潑、有親和力、講話直接、像過來人一樣的理財婆婆媽媽。',
+  '親切感': '你是一個正象、溫暖、體貼、充滿同理心的理財顧問。總是站在客戶的角度思考。',
+  '幽默感': '你是一個懂玩、幽默、每天掛在社群平台上的迷因大師兼行銷高手。',
+  '賈伯斯感': '你是一個極簡、自信、客戶體驗至上、擁有高度的意見領袖。',
+  '直接促銷': '你是一個追求高效轉換、數字說話的行銷專家。'
 };
 
 const SYSTEM_PROMPT_BASE = `
 【一、去 AI 化約束（違反即重寫）】
-1. 語感變化：必須交替使用極短句（4-6字）與長句，禁止所有句子結構相似。
+1. 語感變化：必須交替使用極短句（4-6字）與長句。
 2. 自然收尾：禁止「總之」等做作結語、禁止「這不是...而是...」的語句。
-3. 品牌位置：除非規格強迫，盡量不把「Richart」放在文案第一個字。
-4. 品牌必出規則（鐵律）：除了推播外，每個平台最終產出的文案內文中，必須同時出現「Richart」與「信貸」兩個字，如果是推播，必須出現「信貸」兩個字，但警語不算。
-   若某欄位字數限制確實無法容納，可僅保留其中一個，但必須在【品質審查】欄位中說明原因。
+3. 品牌必出規則：除了推播外，每個平台最終產出的文案內文中，必須同時出現「Richart」與「信貸」兩個字。如果是推播，必須出現「信貸」兩個字。
 
 【二、標點與字數（致命紅線）】
 1. 除「小括號()」與「數字千分位」外，其餘標點全形。嚴禁英文句點「.」。
-2. 寧少勿多，絕對不能超過各平台字數上限，超字導致廣告系統報錯。
+2. 絕對不能超過各平台字數上限。
 
 【三、警語動態生成規則】
 - 提到「時間」→ 結尾加：以實際撥款時間為準
@@ -326,31 +324,11 @@ const SYSTEM_PROMPT_BASE = `
 
 const STYLE_PROMPT_GUIDELINES = `
 【四、文案風格與 Few-Shot 範本（嚴格模仿節奏）】
-
-1. 朋友對話感
-- 禁止太戲謔的裝熟語氣。像過來人分享，不像業務推銷。
-- 範本A：嘿，你沒接到的那通電話是我Richart打的啦，想跟你說，Richart信貸App就能申請，核貸後最快18分鐘撥款，有資金需求不用等人聯絡你喔
-- 範本B：欸~你知道L小姐在Richart申請10萬元信貸，當天就撥款了耶，如果急用錢要不要試試看
-
-2. 親切感
-- 陪伴減壓，強調「我來搞定」。禁用抽象形容詞，例如不說「減輕負擔」，要說「幫你減輕負擔」
-- 範本A：Hi,居家風格由你做主，資金週轉我來搞定》核貸NT$50萬，10年還款最低月付只要NT$4,623起
-- 範本B：緊急週轉不該是沉重的負擔，撥貸10萬日付最低140元，每天少喝一杯星巴克，錢我先幫你搞定
-
-3. 幽默感
-- 必須將梗的情緒與產品特色深度結合。
-- 範本A：終於看開，錢回不來，我們面前，太多阻礙，別讓資金成為你美好生活的阻礙，Richart信貸最長可分120期還款
-- 範本B：阿姨，我不想努力了... 但如果阿姨沒出現， Richart 信貸最長可分120期還款，月付4,623元起
-
-4. 賈伯斯感
-- 極簡、斷句、哲學高度。霸氣自信，「本該如此」的語感。
-- 範本A：設計一個家，需要一千個決定，但資金只需要Richart信貸，最長120期，讓你輕鬆創造你的世界
-- 範本B：漏接我們的電話？沒關係，我們本就不該打擾你，Richart信貸不必對話不必等待，線上3分鐘就能申請
-
-5. 直接促銷
-- 強調轉換效率，直接說數字、說優惠、說行動。
-- 範本A：你有其他銀行的信貸嗎？試試Richart能否幫你借低還高，申請不用錢，喜歡再撥款
-- 範本B：只是短期小額周轉，何必付上千元手續費還綁約？Richart 信貸14萬元以下手續費均一價399元`;
+1. 朋友對話感：嘿，你沒接到的那通電話是我Richart打的啦，核貸後最快18分鐘撥款...
+2. 親切感：Hi,居家風格由你做主，資金週轉我來搞定》核貸NT$50萬...
+3. 幽默感：終於看開，錢回不來，我們面前，太多阻礙...
+4. 賈伯斯感：設計一個家，需要一千個決定，但資金只需要Richart信貸...
+5. 直接促銷：只是短期小額周轉，何必付上千元手續費還綁約？Richart 信貸...`;
 
 // ============================================================================
 // UI 互動
@@ -453,25 +431,15 @@ function checkHumorVisibility() {
 }
 function saveKey() {
   const v = document.getElementById('api-key').value.trim();
-  if (!v.startsWith('AIza')) { alert('API Key 格式錯誤'); return; }
+  if (!v.startsWith('AIza')) { alert('格式錯誤'); return; }
   apiKey = v; document.getElementById('api-key').value = '••••••••••••••••••••••••••••••';
   document.getElementById('key-status').style.display = 'block';
 }
 
 // ============================================================================
-// 產出
+// 產出主邏輯
 // ============================================================================
 function getCharCount(str) { let l = 0; if(!str) return 0; for (let i = 0; i < str.length; i++) l += str.charCodeAt(i) > 255 ? 1 : 0.5; return Math.ceil(l); }
-
-async function fetchHumorSearch(query) {
-  const prompt = `你是台灣社群迷因研究員。任務：搜尋「${query}」，找出最新梗。回傳梗的內容與情境。`;
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], tools: [{ google_search: {} }] })
-  });
-  const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-}
 
 async function generate() {
   if (!apiKey) { alert('請儲存 API Key'); return; }
@@ -482,51 +450,37 @@ async function generate() {
   btn.disabled = true; btn.textContent = '運算中...';
   const resContent = document.getElementById('result-content');
   document.getElementById('result-area').style.display = 'block';
-  resContent.innerHTML = `<div class="loading-step active"><span class="step-icon">⏳</span><span>分析需求中...</span></div>`;
+  resContent.innerHTML = `<div class="loading-step active"><span class="step-icon">⏳</span><span>分析需求與撰寫文案中...</span></div>`;
 
   try {
-    let humorData = '';
-    const needsHumor = (currentMode === 1 && mode1StyleSel.getValue() === '幽默感') || (currentMode !== 1 && multiStyles.includes('幽默感'));
-    if (needsHumor) {
-      const q = document.getElementById('global-humor-material').value.trim();
-      if (q && document.getElementById('global-humor-search').checked) {
-        humorData = `【幽默素材參考】：` + await fetchHumorSearch(q);
-      } else if (q) {
-        humorData = `【幽默指定素材】：${q}`;
-      }
-    }
-
     const prod = productSel.getValue();
     const conf = PRODUCT_CONFIG[prod];
     const url = document.getElementById('url').value.trim() || '[網址]';
     const utmNameInput = document.getElementById('utm-name').value.trim() || '__AI_GENERATE__'; 
     const utmDate = document.getElementById('utm-date').value.trim() || getDefaultDate();
     const groupCode = prod === '大額' ? 'b' : (prod === '小額' ? 's' : '');
+    const utmCampaign = `richart_${groupCode}loan${utmNameInput==='__AI_GENERATE__'?'[AI發想名稱]':utmNameInput}_${utmDate}`;
 
-    const utmCampaign = `richart_${groupCode}loan${utmNameInput==='__AI_GENERATE__'?'[AI名稱]':utmNameInput}_${utmDate}`;
-
-    let promptLogic = `【所有角色設定】\n${Object.entries(STYLE_PERSONAS).map(([k, v]) => `【${k}】\n${v}`).join('\n\n')}\n\n`;
-    promptLogic += `${SYSTEM_PROMPT_BASE}\n\n【產品參數】\n產品線：${prod}\n利率寫法：${conf.aprPromo}\n手續費寫法：${conf.feePromo}\n${conf.specialRule || ''}\n\n`;
-    
+    let promptLogic = `${SYSTEM_PROMPT_BASE}\n\n【產品參數】\n產品線：${prod}\n利率寫法：${conf.aprPromo}\n手續費寫法：${conf.feePromo}\n${conf.specialRule || ''}\n\n`;
     promptLogic += `【UTM 規則 (修正版)】
 1. 原始網址為：「${url}」。
 2. 組合格式：${url}?utm_source=[來源]&utm_medium=[媒介]&utm_campaign=${utmCampaign}&utm_content=[內容]
-3. [內容] 必須嚴格遵守以下拼裝邏輯：
-   - 前綴格式：推播/簡訊/BTS = textlink | EDM = button | 其餘 = banner
-   - 後綴格式：模式一 A版為「_a_[變因]」，B版為「_b_[變因]」；模式二/三 為「_g[N]_[簡寫]」
-   - 範例：banner_g1_fast (不可帶入日期或重複 campaign 內容)
-4. ⚠️ 推播(Push)：嚴禁包含網址連結或 UTM 參數。
-5. ⚠️ Meta/FB：內文最慢「第三句」就要出現帶 UTM 的連結。`;
+3. [內容] 邏輯：
+   - 前綴：推播/簡訊/BTS = textlink | EDM = button | 其餘 = banner
+   - 後綴：模式一為 _a_[變因], _b_[變因] | 模式二/三 為 _g[N]_[簡寫]
+   - 範例：banner_g1_fast
+4. ⚠️ 推播(Push)：嚴禁包含任何網址連結。
+5. ⚠️ Meta/FB：連結必須在文案前三句內。`;
 
     if (currentMode === 1) {
-      promptLogic += `\n\n【模式一：同風格 A/B 測試】\n測試風格：${mode1StyleSel.getValue()}\n測試變因：${mode1VariableSel.getValue()}\n要求：產出 A/B 版，語感與結構需 90% 一致，僅抽換變因字詞。`;
+      promptLogic += `\n【模式一：同風格 A/B 測試】\n測試風格：${mode1StyleSel.getValue()}\n測試變因：${mode1VariableSel.getValue()}\n要求：產出 A/B 版。`;
     } else if (currentMode === 2) {
-      promptLogic += `\n\n【模式二：不同風格統一切角】\n指定風格：${multiStyles.join(', ')}\n要求：所有組別主打「完全相同」的產品特性，僅用語氣區隔。`;
+      promptLogic += `\n【模式二：不同風格統一切角】\n指定風格：${multiStyles.join(', ')}\n要求：所有組別主打相同產品特性。`;
     } else {
-      promptLogic += `\n\n【模式三：各自切角自由發想】\n指定風格：${multiStyles.join(', ')}\n要求：每組發揮不同的產品特色與痛點。`;
+      promptLogic += `\n【模式三：各自切角自由發想】\n指定風格：${multiStyles.join(', ')}\n要求：每組發揮不同產品特色的痛點。`;
     }
 
-    const userMsg = `目標客群：${audienceSel.getValue()}\n痛點：${painpointSel.getValue()}\n架構：${frameworkSel.getValue()}\n促購：${promoSel.getValue()}\n\n${humorData}\n\n請產出以下平台：\n${platforms.map(p => `- ${p}：${PLATFORM_SPECS[p]}`).join('\n')}`;
+    const userMsg = `目標：${audienceSel.getValue()}\n痛點：${painpointSel.getValue()}\n架構：${frameworkSel.getValue()}\n促購：${promoSel.getValue()}\n請產出以下平台：\n${platforms.map(p => `- ${p}：${PLATFORM_SPECS[p]}`).join('\n')}`;
 
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -575,7 +529,7 @@ function escapeHTML(str) { return str.replace(/[&<>'"]/g, t => ({'&':'&amp;','<'
 function renderResults(results) {
   let html = '';
   results.forEach((r, pI) => {
-    html += `<div class="result-block"><div class="platform-label">${r.platform}</div><div class="result-table-wrap"><table><thead><tr><th>欄位</th><th>文案內容與分析</th></tr></thead><tbody>`;
+    html += `<div class="result-block"><div class="platform-label">${r.platform}</div><div class="result-table-wrap"><table><thead><tr><th>欄位</th><th>文案與分析</th></tr></thead><tbody>`;
     r.fields.forEach((f, fI) => {
       const cellId = `cell-${pI}-${fI}`;
       html += `<tr><td>${f.name}<br><span style="color:var(--text-hint);font-size:11px;">${getCharCount(f.content)} 字</span></td>
@@ -590,7 +544,6 @@ function renderResults(results) {
   document.getElementById('result-content').innerHTML = html;
 }
 
-// 延伸 A/B Test
 let currentABCellId = '';
 function openABModal(id) { currentABCellId = id; document.getElementById('ab-modal').style.display = 'flex'; }
 function closeABModal() { document.getElementById('ab-modal').style.display = 'none'; }
@@ -601,17 +554,13 @@ async function confirmABTest() {
   const cell = document.getElementById(currentABCellId);
   const baseText = cell.getAttribute('data-original');
   const btn = cell.querySelector('.ab-test-btn');
-  btn.textContent = '⏳ ...'; btn.disabled = true; closeABModal();
-
-  const prompt = `你是一個 A/B Test 專家。以以下文案為 A 版，針對測試變因「${v}」產出 B 版對照組。
-鐵律：A/B 版句型語感需 90% 一致，僅抽換變因字詞。
-若內容中有網址，A版 UTM 後綴加 _a_[簡寫]，B版加 _b_[簡寫]。\n\n【A版】：\n${baseText}`;
+  btn.textContent = '運算中...'; btn.disabled = true; closeABModal();
 
   try {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        contents: [{ role: 'user', parts: [{ text: `你是一個 A/B Test 專家。以以下文案為 A 版，針對測試變因「${v}」產出 B 版對照組。A/B 版句型語感需 90% 一致。若有網址，UTM 後綴加 _a_[簡寫]，B版加 _b_[簡寫]。\n\n【A版】：\n${baseText}` }] }],
         generationConfig: { responseMimeType: 'application/json', responseSchema: { type: 'OBJECT', properties: { a_version: { type: 'STRING' }, b_version: { type: 'STRING' }, analysis: { type: 'STRING' } }, required: ['a_version', 'b_version', 'analysis'] } }
       })
     });
@@ -621,7 +570,7 @@ async function confirmABTest() {
     cell.innerHTML = `<div class="ab-result-container"><div class="ab-version-box ab-version-a"><span class="ab-label">A版</span><br>${escapeHTML(p.a_version)}</div>
                       <div class="ab-version-box ab-version-b"><span class="ab-label">B版 (${escapeHTML(v)})</span><br>${escapeHTML(p.b_version)}</div>
                       <div class="analysis-box" style="margin-top:0;">💡 <b>差異：</b>${escapeHTML(p.analysis)}</div></div>
-                      <button class="ab-test-btn" onclick="openABModal('${currentABCellId}')">🔄 重新調整變因</button>`;
+                      <button class="ab-test-btn" onclick="openABModal('${currentABCellId}')">🔄 改變因</button>`;
     
     cell.setAttribute('data-is-extended', 'true');
     cell.setAttribute('data-v-a', p.a_version);
@@ -631,35 +580,65 @@ async function confirmABTest() {
 }
 
 function downloadExcel() {
-  if (!resultData.length) return alert('無資料');
-  const wb = XLSX.utils.book_new();
-  document.querySelectorAll('.result-block').forEach(block => {
-    const pRaw = block.querySelector('.platform-label').innerText;
-    const pName = pRaw.replace(/[\\/*?:[\]]/g, '_').substring(0, 31);
-    const rows = [['欄位', '文案內容', '字數(LEN)', '行銷切角解析']];
-    
-    block.querySelectorAll('tbody tr').forEach(tr => {
-      const field = tr.querySelector('td:first-child').innerText.split('\n')[0];
-      const cell = tr.querySelector('td:nth-child(2)');
+  if (!resultData.length) return alert('目前尚無資料');
+  if (typeof XLSX === 'undefined') return alert('XLSX 套件未載入');
+
+  try {
+    const wb = XLSX.utils.book_new();
+    const resultBlocks = document.querySelectorAll('.result-block');
+    let sheetCount = 0;
+    const usedSheetNames = new Set();
+
+    resultBlocks.forEach(block => {
+      const pRaw = block.querySelector('.platform-label').innerText;
+      // 處理 Excel 工作表名稱限制 (長度與非法字元)
+      let pName = pRaw.replace(/[\\/*?:[\]]/g, '_').substring(0, 25);
       
-      if (cell.getAttribute('data-is-extended') === 'true') {
-        const va = cell.getAttribute('data-v-a');
-        const vb = cell.getAttribute('data-v-b');
-        const ana = cell.getAttribute('data-v-analysis');
-        rows.push([field + ' (A版)', va, va.length, '延伸 A/B Test 基底']);
-        rows.push([field + ' (B版)', vb, vb.length, '差異：' + ana]);
-      } else {
-        const content = cell.getAttribute('data-original') || '';
-        const analysis = cell.querySelector('.analysis-box') ? cell.querySelector('.analysis-box').innerText.replace(/💡 解析：/, '').trim() : '';
-        rows.push([field, content, content.length, analysis]);
+      // 名稱唯一化檢查
+      let finalName = pName;
+      let counter = 1;
+      while (usedSheetNames.has(finalName)) {
+        finalName = pName + "_" + counter;
+        counter++;
+      }
+      usedSheetNames.add(finalName);
+
+      const rows = [['欄位', '文案內容', '字數(LEN)', '行銷切角解析']];
+      block.querySelectorAll('tbody tr').forEach(tr => {
+        const field = tr.querySelector('td:first-child').innerText.split('\n')[0];
+        const cell = tr.querySelector('td:nth-child(2)');
+        
+        if (cell.getAttribute('data-is-extended') === 'true') {
+          const va = cell.getAttribute('data-v-a') || '';
+          const vb = cell.getAttribute('data-v-b') || '';
+          const ana = cell.getAttribute('data-v-analysis') || '';
+          rows.push([field + ' (A版)', va, getCharCount(va), '延伸 A/B Test 基底']);
+          rows.push([field + ' (B版)', vb, getCharCount(vb), '差異：' + ana]);
+        } else {
+          const content = cell.getAttribute('data-original') || '';
+          const analysisBox = cell.querySelector('.analysis-box');
+          const analysis = analysisBox ? analysisBox.innerText.replace(/💡 解析：/, '').trim() : '';
+          rows.push([field, content, getCharCount(content), analysis]);
+        }
+      });
+      
+      if (rows.length > 1) {
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+        ws['!cols'] = [{wch:18}, {wch:70}, {wch:10}, {wch:40}];
+        XLSX.utils.book_append_sheet(wb, ws, finalName);
+        sheetCount++;
       }
     });
-    
-    const ws = XLSX.utils.aoa_to_sheet(rows); 
-    ws['!cols'] = [{wch:18}, {wch:70}, {wch:10}, {wch:40}];
-    XLSX.utils.book_append_sheet(wb, ws, pName);
-  });
-  XLSX.writeFile(wb, `Richart文案_${new Date().toISOString().slice(0,10)}.xlsx`);
+
+    if (sheetCount > 0) {
+      XLSX.writeFile(wb, `Richart文案_${new Date().toISOString().slice(0,10)}.xlsx`);
+    } else {
+      alert('無有效文案資料可匯出');
+    }
+  } catch (err) {
+    console.error(err);
+    alert('Excel 匯出時發生技術錯誤：' + err.message);
+  }
 }
 </script>
 </body>
