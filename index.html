@@ -223,19 +223,25 @@
 const GEMINI_MODEL = 'gemini-3-flash-preview';
 
 // ============================================================================
-// 資料層 (Data Layer)
+// 資料層 (Data Layer) - 更新起/最低邏輯
 // ============================================================================
 const PRODUCT_CONFIG = {
   '科技業': {
-    aprBase: '2.99%', aprRange: '2.99%-4.23%', fee: '0', period: '120',
+    aprBase: '2.99%', aprPromo: '2.99% (絕對不可加上「起」或「最低」)', // 無起
+    fee: '0',         feePromo: '0元起 (或 最低0元)',                    // 有起
+    period: '120', 
     disclaimerApr: '2.99%-4.23%',
   },
   '小額': {
-    aprBase: '3.99%', aprRange: '4.98%-14.99%', fee: '399', period: '24',
+    aprBase: '3.99%', aprPromo: '3.99%起 (或 最低3.99%)',                // 有起
+    fee: '399',       feePromo: '399元 (絕對不可加上「起」或「最低」)',  // 無起
+    period: '24', 
     disclaimerApr: '4.98%-14.99%',
   },
   '大額': {
-    aprBase: '2.1%', aprRange: '2.1%-16.39%', fee: '0', period: '120',
+    aprBase: '2.1%',  aprPromo: '2.1%起 (或 最低2.1%)',                  // 有起
+    fee: '0',         feePromo: '0元起 (或 最低0元)',                    // 有起
+    period: '120', 
     disclaimerApr: '2.1%-16.39%',
   }
 };
@@ -269,7 +275,7 @@ const SYSTEM_PROMPT_BASE = `【一、去 AI 化約束（違反即重寫）】
 2. 自然收尾：禁止「總之」等做作結語。
 3. 品牌位置：除非規格強迫，盡量不把「Richart」放在文案第一個字。
 4. 品牌必出規則（鐵律）：除了推播外，每個平台最終產出的文案內文中，必須同時出現「Richart」與「信貸」兩個字，如果是推播，必須出現「信貸」兩個字，但警語不算。
-    若某欄位字數限制確實無法容納，可僅保留其中一個，但必須在【品質審查】欄位中說明原因。
+   若某欄位字數限制確實無法容納，可僅保留其中一個，但必須在【品質審查】欄位中說明原因。
 
 【二、標點與字數（致命紅線）】
 1. 除「小括號()」與「數字千分位」外，其餘標點全形。嚴禁英文句點「.」。
@@ -595,20 +601,22 @@ async function generate() {
   // 注入風格專屬的角色設定
   const personaPrompt = `【角色設定】\n${STYLE_PERSONAS[style] || STYLE_PERSONAS['直接促銷']}\n\n`;
 
+  // 修改此處：強制置入「起/最低」規範邏輯
   const prodPrompt = `
-【動態產品參數（嚴格套用，不得偏離）】
+【動態產品參數與用字規範（嚴格套用，不得偏離）】
 - 產品線：${prod}
 - 警語利率區間：${conf.disclaimerApr}
-- 利率起價：${conf.aprBase}
-- 手續費：${conf.fee}元
+- 內文提及「利率」的寫法規範：${conf.aprPromo}
+- 內文提及「手續費」的寫法規範：${conf.feePromo}
+- 內文提及「月付/日付金額」的寫法規範：務必加上「起」或「最低」（例如：月付4,623元起）
 - 最長期數：${conf.period}期
-- 月付試算：以${conf.aprBase}手續費${conf.fee}元還款${conf.period}期試算
-- 日付試算：以${conf.aprBase}手續費${conf.fee}元還款${conf.period}期每月30日試算`;
+- 警語月付試算：以${conf.aprBase}手續費${conf.fee}元還款${conf.period}期試算
+- 警語日付試算：以${conf.aprBase}手續費${conf.fee}元還款${conf.period}期每月30日試算`;
 
   const multiGroupPrompt = isAbTest
-    ? `\n【A/B Test 模式】測試變因：「${abVariableSel.getValue()}」。產出 A版與 B版，除變因相關字詞外，其餘架構幾乎完全一致。欄位名稱前加【A版】或【B版】。\n⚠️【UTM 區分規定】A版與B版若有附上網址，必須在 UTM 參數中區分（例如在 utm_content 值後方加上 _a 與 _b）。`
+    ? `\n【A/B Test 模式】測試變因：「${abVariableSel.getValue()}」。產出 A版與 B版，除變因相關字詞外，其餘架構幾乎完全一致。欄位名稱前加【A版】或【B版】。\n⚠️【UTM 區分規定】A版與B版若有附上網址，必須在 UTM 的 utm_content 參數後方加上「_a_[A版變因簡寫]」與「_b_[B版變因簡寫]」。簡寫請你依據測試變因，以全小寫英文自行決定（例如變因為有無贈品，可寫成 _a_ygift 與 _b_ngift）。`
     : numGroups > 1
-      ? `\n【多組模式】產出 ${numGroups} 組，每組主打不同賣點。欄位名稱前加【第N組】。禁止重複相同關鍵字。\n⚠️【UTM 區分規定】不同組別的文案若有附上網址，必須在 UTM 參數中區分（例如在 utm_content 值後方加上 _g1, _g2 等標示）。`
+      ? `\n【多組模式】產出 ${numGroups} 組，每組主打不同賣點。欄位名稱前加【第N組】。禁止重複相同關鍵字。\n⚠️【UTM 規定】1. 所有組別的 utm_campaign 必須完全相同。2. 不同組別的文案若有附上網址，必須在 utm_content 參數後方加上「_g1_[第一組切角簡寫]」,「_g2_[第二組切角簡寫]」等標示。切角簡寫請你根據該組主打賣點，以全小寫英文自行決定（例如第一組主打快速可寫 _g1_fast，第二組主打低利可寫 _g2_lowrate）。`
       : '';
 
   const aiReviewPrompt = `\n【自我審查】產出後，在每個平台 fields 最後一筆加一個 name="【品質審查】" 的欄位，content 簡述：字數是否達標、標點是否全形、語氣是否符合風格、有無使用禁止詞彙。`;
@@ -679,7 +687,9 @@ ${platforms.map(p => `- ${p}：${PLATFORM_SPECS[p]}`).join('\n')}`;
 
     let parsed;
     try {
-      parsed = JSON.parse(rawText);
+      // 移除頭尾可能出現的 Markdown 標記 (例如 ```json 和 ```) 以防解析失敗
+      const cleanedText = rawText.replace(/^```(json)?\n?|```$/gm, '').trim();
+      parsed = JSON.parse(cleanedText);
     } catch(parseErr) {
       throw new Error(`JSON 解析失敗：${parseErr.message}。原始回傳（前300字）：${rawText.substring(0, 300)}`);
     }
