@@ -620,6 +620,11 @@ ${platforms.map(p => `- ${p}：${PLATFORM_SPECS[p]}`).join('\n')}`;
           responseSchema: {
             type: 'OBJECT',
             properties: {
+              // utm_name_suggestion 與 results 並列在最外層 properties
+              utm_name_suggestion: {
+                type: 'STRING',
+                description: '全小寫英文素材名稱，不超過15字元，例如 fast18min、zerofee'
+              },
               results: {
                 type: 'ARRAY',
                 items: {
@@ -644,11 +649,9 @@ ${platforms.map(p => `- ${p}：${PLATFORM_SPECS[p]}`).join('\n')}`;
               }
             },
             required: ['results']
-          },
-          // 素材名稱 AI 發想：僅在使用者未填寫時由 AI 回傳
-          utm_name_suggestion: { type: 'STRING', description: '全小寫英文素材名稱，使用者未填時必填，已填時可省略' }
+          }
+          // 【關鍵】此步驟不帶 tools，讓 responseSchema 正常運作
         }
-        // 【關鍵】此步驟不帶 tools，讓 responseSchema 正常運作
       })
     });
 
