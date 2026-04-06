@@ -115,7 +115,7 @@
 
   /* ── Modal ── */
   .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: none; align-items: center; justify-content: center; backdrop-filter: blur(2px); }
-  .modal-box { background: var(--surface); width: 90%; max-width: 400px; padding: 24px; border-radius: var(--radius); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+  .modal-box { background: var(--surface); width: 90%; max-width: 400px; padding: 24px; border-radius: var(--radius); box-shadow: 0 10px 25 rgba(0,0,0,0.1); }
   .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
   .modal-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
 
@@ -126,7 +126,7 @@
 <body>
 <header>
   <span class="header-title">Richart 文案平台</span>
-  <span class="header-sub">MarTech 引擎 v4.1 (完整邏輯版) · gemini-3-flash-preview</span>
+  <span class="header-sub">MarTech 引擎 v4.3 (完整還原指令版) · gemini-3-flash-preview</span>
 </header>
 <main>
 
@@ -257,7 +257,7 @@
   <div class="modal-overlay" id="ab-modal">
     <div class="modal-box">
       <div class="modal-title">⚖️ 延伸 A/B Test 設定</div>
-      <p class="hint" style="margin-bottom:12px; font-size:13px; color:var(--text);">系統將鎖定此段文案作為「A版基底」，並依據下方變因精準改寫出「B版」，其餘語感與架構將維持 90% 以上相同。</p>
+      <p class="hint" style="margin-bottom:12px; font-size:13px; color:var(--text);">系統將鎖定此段文案作為「A版基底」，並依據下方變因精準改寫出「B版」。</p>
       <div class="field">
         <label>測試變因 (例如：有無贈品、不同 CTA)</label>
         <input type="text" id="ab-variable-input" placeholder="請輸入欲測試的差異點..." />
@@ -277,41 +277,19 @@
 const GEMINI_MODEL = 'gemini-3-flash-preview';
 
 const PRODUCT_CONFIG = {
-  '科技業': { 
-    aprBase: '2.99%', 
-    aprPromo: '2.99% (絕對不可加上「起」或「最低」)', 
-    fee: '0', 
-    feePromo: '0元起 (或 最低0元)', 
-    period: '120', 
-    disclaimerApr: '2.99%-4.23%', 
-    specialRule: '⚠️ 科技業專屬鐵律：文案內容「必須」同時包含「科技製造業」與「2.99%方案」這兩組關鍵字。' 
-  },
-  '小額': { 
-    aprBase: '3.99%', 
-    aprPromo: '3.99%起 (或 最低3.99%)', 
-    fee: '399', 
-    feePromo: '399元 (絕對不可加上「起」或「最低」)', 
-    period: '24', 
-    disclaimerApr: '4.98%-14.99%' 
-  },
-  '大額': { 
-    aprBase: '2.1%', 
-    aprPromo: '2.1%起 (或 最低2.1%)', 
-    fee: '0', 
-    feePromo: '0元起 (或 最低0元)', 
-    period: '120', 
-    disclaimerApr: '2.1%-16.39%' 
-  }
+  '科技業': { aprBase: '2.99%', aprPromo: '2.99% (絕對不可加上「起」或「最低」)', fee: '0', feePromo: '0元起 (或 最低0元)', period: '120', disclaimerApr: '2.99%-4.23%', specialRule: '⚠️ 科技業專屬鐵律：文案內容「必須」同時包含「科技製造業」與「2.99%方案」這兩組關鍵字。' },
+  '小額': { aprBase: '3.99%', aprPromo: '3.99%起 (或 最低3.99%)', fee: '399', feePromo: '399元 (絕對不可加上「起」或「最低」)', period: '24', disclaimerApr: '4.98%-14.99%' },
+  '大額': { aprBase: '2.1%', aprPromo: '2.1%起 (或 最低2.1%)', fee: '0', feePromo: '0元起 (或 最低0元)', period: '120', disclaimerApr: '2.1%-16.39%' }
 };
 
 const PLATFORM_SPECS = {
   'Pmax':      '標題15字、長標題45字、短說明30字、長說明45字。(Pmax/YouTube/DemandGen 絕對不可使用驚嘆號與斜線)',
   'DemandGen': '標題20字、長說明45字。(絕對不可使用驚嘆號與斜線)',
-  'Meta/FB':   '標題12字、內文200字、連結說明15字。',
+  'Meta/FB':   '標題12字、內文200字(含警語)、連結說明15字。⚠️鐵律：FB 內文最慢「第三句」必須出現行動呼籲(CTA)與帶 UTM 的連結。',
   'YouTube':   '長標題45字、說明欄放短版警語(獨立佔滿)、行動號召固定「立即申請」、標題7字。(絕對不可使用驚嘆號與斜線)',
   'LINELAP':   '大圖標題10字、內文35字、小圖標題10字、長標題17字。',
-  '推播':      '標題12字、內文100字(含推播版警語，不含連結，推播不帶連結)。格式：【標題】內文（純文字）',
-  '簡訊':      '標題7字、內文70字(含簡訊警語，不含連結)。格式：【標題】內文+連結(附UTM)',
+  '推播':      '標題12字、內文100字(含推播版警語)。⚠️絕對禁止包含任何網址連結或任何 UTM 參數相關字眼。格式：【標題】內文',
+  '簡訊':      '標題7字、內文70字(含簡訊警語)。格式：【標題】內文+連結(附UTM)',
   'BTS':       'APP首頁標題7字、Bottom Sheet主標15字、內容50字、Action固定「立即申請」、備註100字。',
   'EDM':       '信件主旨12字(不需警語)。'
 };
@@ -326,11 +304,10 @@ const STYLE_PERSONAS = {
   '直接促銷': '你是一個追求高效轉換、數字說話的行銷專家。說話直白、不繞圈子，精準強調產品優惠、數字與行動呼籲，用語專業精煉。'
 };
 
-// 【完整還原】防幻覺的邊界條件與格式要求
 const SYSTEM_PROMPT_BASE = `
 【一、去 AI 化約束（違反即重寫）】
 1. 語感變化：必須交替使用極短句（4-6字）與長句，禁止所有句子結構相似。
-2. 自然收尾：禁止「總之」等做作結語。
+2. 自然收尾：禁止「總之」等做作結語、禁止「這不是...而是...」的語句。
 3. 品牌位置：除非規格強迫，盡量不把「Richart」放在文案第一個字。
 4. 品牌必出規則（鐵律）：除了推播外，每個平台最終產出的文案內文中，必須同時出現「Richart」與「信貸」兩個字，如果是推播，必須出現「信貸」兩個字，但警語不算。
    若某欄位字數限制確實無法容納，可僅保留其中一個，但必須在【品質審查】欄位中說明原因。
@@ -345,50 +322,48 @@ const SYSTEM_PROMPT_BASE = `
 - 兩者皆提→ 以實際審核條件及撥款時間為準
 - 提到「月付」→ 結尾補：，月付以[利率]%手續費[手續費]元還款[期數]期試算
 - 提到「日付」→ 結尾補：，日付以[利率]%手續費[手續費]元還款[期數]期每月30日試算
-- Pmax/YouTube/DemandGen格式（無冒號無空格）範例：
-  *總費用年百分率2.1%-16.39%*以實際審核條件及撥款時間為準，月付以2.1%手續費0元還款120期試算`;
+- Pmax/YouTube/DemandGen格式範例：*總費用年百分率2.1%-16.39%*以實際審核條件及撥款時間為準，月付以2.1%手續費0元還款120期試算`;
 
-// 【完整還原】具體的 Few-Shot 與細節約束
 const STYLE_PROMPT_GUIDELINES = `
 【四、文案風格與 Few-Shot 範本（嚴格模仿節奏）】
 
 1. 朋友對話感
-- 活潑感。禁止太戲謔的裝熟語氣（哈、啦、呵），但可以稍微打招呼(如：嗨、嘿、Hi)。像過來人分享，不像業務推銷。
-- 範本A：嘿，你沒接到的那通電話是我Richart打的啦，想跟你說，Richart信貸App就能申請，核貸後最快18分鐘撥款，有資金需求不用等人聯絡你喔，總費用年百分率2.10%~16.39%以實際審核時間為準
-- 範本B：欸~你知道L小姐在Richart申請10萬元信貸，當天就撥款了耶，如果急用錢要不要試試看，總費用年百分率2.10%~16.39%以實際審核時間為準
+- 禁止太戲謔的裝熟語氣。像過來人分享，不像業務推銷。
+- 範本A：嘿，你沒接到的那通電話是我Richart打的啦，想跟你說，Richart信貸App就能申請，核貸後最快18分鐘撥款，有資金需求不用等人聯絡你喔
+- 範本B：欸~你知道L小姐在Richart申請10萬元信貸，當天就撥款了耶，如果急用錢要不要試試看
 
 2. 親切感
-- 陪伴減壓，強調「我來搞定」的體貼感，訴求美好願景。具體細節：禁用抽象形容詞，例如不說「減輕負擔」，要說「幫你減輕負擔」
-- 範本A：Hi,居家風格由你做主，資金週轉我來搞定》核貸NT$50萬，10年還款最低月付只要NT$4,623起》Richart信貸總費用年百分率2.10%~16.39%
-- 範本B：緊急週轉不該是沉重的負擔，撥貸10萬日付最低140元，每天少喝一杯星巴克，錢我先幫你搞定，等你錢到位，提前還款免手續費>>*Richart信貸總費用年百分率4.38%~14.99%，日付以3.99%手續費399元還款24期每月30日試算
+- 陪伴減壓，強調「我來搞定」。禁用抽象形容詞，例如不說「減輕負擔」，要說「幫你減輕負擔」
+- 範本A：Hi,居家風格由你做主，資金週轉我來搞定》核貸NT$50萬，10年還款最低月付只要NT$4,623起
+- 範本B：緊急週轉不該是沉重的負擔，撥貸10萬日付最低140元，每天少喝一杯星巴克，錢我先幫你搞定
 
 3. 幽默感
-- 結合社群迷因、流行語、歌詞，語氣有趣讓品牌很懂玩。必須將梗的情緒與客群痛點深度結合。若有提供「搜尋參考梗」，必須融入笑點，不能只是點到為止。具體細節：禁用抽象形容詞。
-- 範本A：終於看開，錢回不來，我們面前，太多阻礙，別讓資金成為你美好生活的阻礙，Richart信貸最長可分120期還款，居家裝潢修繕也能很輕鬆>>總費用年百分率2.10%~16.39%以實際審核條件為準
-- 範本B：阿姨，我不想努力了... 但如果阿姨沒出現， Richart 信貸最長可分120期還款，月付4,623元起，實現夢想不用很有壓力>>總費用年百分率2.10%~16.39%以實際審核條件為準，月付以2.1%手續費0元還款120期試算
-- 範本C：世界上最遙遠的距離，不是生與死，是我打了電話，你卻靜音🤫為了不打擾你，我們把信貸優惠搬到線上，Richart線上申請最快3分鐘，申貸時輸入專屬代碼【RR2026】成功撥款再享最高10,000點台新Point >>總費用年百分率2.10%~16.39%
+- 必須將梗的情緒與產品特色深度結合。
+- 範本A：終於看開，錢回不來，我們面前，太多阻礙，別讓資金成為你美好生活的阻礙，Richart信貸最長可分120期還款
+- 範本B：阿姨，我不想努力了... 但如果阿姨沒出現， Richart 信貸最長可分120期還款，月付4,623元起
 
 4. 賈伯斯感
 - 極簡、斷句、哲學高度。霸氣自信，「本該如此」的語感。
-- 範本A：設計一個家，需要一千個決定，但資金只需要Richart信貸，最長120期，月付4,623元起，讓你輕鬆創造你的世界>>總費用年百分率2.10%~16.39%以實際審核條件為準，月付以2.1%手續費0元還款120期試算
-- 範本B：漏接我們的電話？沒關係，我們本就不該打擾你，Richart信貸不必對話不必等待，線上3分鐘就能申請，上班族符合資格免附財力證明，信貸就該如此簡單 >>總費用年百分率2.10%~16.39%以實際審核條件為準
+- 範本A：設計一個家，需要一千個決定，但資金只需要Richart信貸，最長120期，讓你輕鬆創造你的世界
+- 範本B：漏接我們的電話？沒關係，我們本就不該打擾你，Richart信貸不必對話不必等待，線上3分鐘就能申請
 
 5. 直接促銷
-- 強調轉換效率，直接說數字、說優惠、說行動，可以用「專屬」「優惠」等較專業精鍊的詞彙。
-- 範本A：你有其他銀行的信貸嗎？試試Richart能否幫你借低還高，申請不用錢，喜歡再撥款，輸入【RR2026】撥款後享最高10,000點台新Point>>總費用年百分率2.10%~16.39%以實際審核條件為準
-- 範本B：只是短期小額周轉，何必付上千元手續費還綁約？Richart 信貸14萬元以下手續費均一價399元，提前還款免違約金，你的小額周轉最佳解>>*Richart信貸總費用年百分率4.38%~14.99%
-- 範本C：Richart信貸核貸後最快18分鐘撥款，上班族符合資格免附財力證明，Richart信貸就是快>>總費用年百分率2.10%~16.39%以實際審核條件為準`;
+- 強調轉換效率，直接說數字、說優惠、說行動。
+- 範本A：你有其他銀行的信貸嗎？試試Richart能否幫你借低還高，申請不用錢，喜歡再撥款
+- 範本B：只是短期小額周轉，何必付上千元手續費還綁約？Richart 信貸14萬元以下手續費均一價399元`;
 
 // ============================================================================
-// UI 互動與狀態
+// UI 互動
 // ============================================================================
 let apiKey = '', resultData = [];
-let currentMode = 1; 
-let multiStyles = []; // 模式2, 3 的標籤陣列
+let currentMode = 1;
+let multiStyles = [];
 
 function getDefaultDate() {
   const now = new Date();
-  return now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + '01';
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, '0');
+  return y + m + '01';
 }
 
 function createSelect(containerEl, options, onChangeCb = null) {
@@ -396,79 +371,39 @@ function createSelect(containerEl, options, onChangeCb = null) {
   let selected = options[0];
   const display = document.createElement('div');
   display.className = 'custom-select-display';
-  
   const lbl = document.createElement('input');
-  lbl.type = 'text';
-  lbl.value = selected;
+  lbl.type = 'text'; lbl.value = selected;
   lbl.style.cssText = 'border:none;outline:none;background:transparent;width:100%;font-family:inherit;font-size:14px;color:var(--text);';
-  lbl.addEventListener('input', e => { 
-    selected = e.target.value; 
-    if (onChangeCb) onChangeCb(selected); 
-  });
-  
+  lbl.addEventListener('input', e => { selected = e.target.value; if (onChangeCb) onChangeCb(selected); });
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('viewBox', '0 0 12 8');
-  svg.classList.add('custom-select-arrow');
+  svg.setAttribute('viewBox', '0 0 12 8'); svg.classList.add('custom-select-arrow');
   svg.innerHTML = '<path d="M1 1l5 5 5-5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round"/>';
-  
-  display.appendChild(lbl);
-  display.appendChild(svg);
-
+  display.appendChild(lbl); display.appendChild(svg);
   const dd = document.createElement('div');
   dd.className = 'custom-select-dropdown';
   let open = false;
-  
-  function close() { 
-    open = false; 
-    dd.classList.remove('open'); 
-    display.classList.remove('open'); 
-  }
-  
+  function close() { open = false; dd.classList.remove('open'); display.classList.remove('open'); }
   function renderOpts() {
     dd.innerHTML = '';
     options.forEach(opt => {
       const item = document.createElement('div');
       item.className = 'custom-select-option' + (opt === selected ? ' selected' : '');
-      const s = document.createElement('span');
-      s.textContent = opt;
+      const s = document.createElement('span'); s.textContent = opt;
       item.appendChild(s);
-      item.addEventListener('click', () => { 
-        selected = opt; 
-        lbl.value = opt; 
-        if (onChangeCb) onChangeCb(opt); 
-        close(); 
-      });
+      item.addEventListener('click', () => { selected = opt; lbl.value = opt; if (onChangeCb) onChangeCb(opt); close(); });
       dd.appendChild(item);
     });
   }
-  
   lbl.addEventListener('click', e => e.stopPropagation());
-  lbl.addEventListener('focus', () => { 
-    open = true; 
-    dd.classList.add('open'); 
-    display.classList.add('open'); 
-  });
-  svg.addEventListener('click', e => { 
-    e.stopPropagation(); 
-    open = !open; 
-    dd.classList.toggle('open', open); 
-    display.classList.toggle('open', open); 
-  });
-  display.addEventListener('click', e => { 
-    if (e.target !== lbl) lbl.focus(); 
-  });
-  document.addEventListener('click', e => { 
-    if (!containerEl.contains(e.target)) close(); 
-  });
-  
-  renderOpts();
-  containerEl.appendChild(display);
-  containerEl.appendChild(dd);
-  
+  lbl.addEventListener('focus', () => { open = true; dd.classList.add('open'); display.classList.add('open'); });
+  svg.addEventListener('click', e => { e.stopPropagation(); open = !open; dd.classList.toggle('open', open); display.classList.toggle('open', open); });
+  display.addEventListener('click', e => { if (e.target !== lbl) lbl.focus(); });
+  document.addEventListener('click', e => { if (!containerEl.contains(e.target)) close(); });
+  renderOpts(); containerEl.appendChild(display); containerEl.appendChild(dd);
   return { getValue: () => selected };
 }
 
-// 初始化全域 UI
+// 初始化
 const productSel      = createSelect(document.getElementById('product-wrap'), ['大額','科技業','小額']);
 const audienceSel     = createSelect(document.getElementById('audience-wrap'), ['有他行信貸者','卡循族','薪轉戶','急需資金者','裝潢族','已持信貸還款一陣子','信貸已結清','有投資行為者']);
 const customerTypeSel = createSelect(document.getElementById('customer-type-wrap'), ['不分新舊戶','新戶','舊戶']);
@@ -480,238 +415,123 @@ const mode1VariableSel= createSelect(document.getElementById('mode1-variable-wra
 const multiStyleSel   = createSelect(document.getElementById('multi-style-wrap'), STYLE_OPTIONS);
 
 document.getElementById('utm-date').value = getDefaultDate();
-
 document.querySelectorAll('.platform-btn').forEach(btn => btn.addEventListener('click', () => {
   btn.classList.toggle('active');
-  const count = document.querySelectorAll('.platform-btn.active').length;
-  document.getElementById('platform-counter').textContent = count + ' 個';
+  document.getElementById('platform-counter').textContent = document.querySelectorAll('.platform-btn.active').length + ' 個';
 }));
 
-// 模式切換邏輯
 function setMode(mode) {
   currentMode = mode;
   document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
   document.querySelector(`.mode-btn[data-mode="${mode}"]`).classList.add('active');
-  
-  if (mode === 1) {
-    document.getElementById('mode-1-settings').style.display = 'grid';
-    document.getElementById('mode-multi-settings').style.display = 'none';
-  } else {
-    document.getElementById('mode-1-settings').style.display = 'none';
-    document.getElementById('mode-multi-settings').style.display = 'block';
-  }
+  document.getElementById('mode-1-settings').style.display = mode === 1 ? 'grid' : 'none';
+  document.getElementById('mode-multi-settings').style.display = mode !== 1 ? 'block' : 'none';
   checkHumorVisibility();
 }
 
-// 標籤系統邏輯
 function addStyleChip() {
-  if (multiStyles.length >= 5) {
-    alert('已達上限！為確保系統產出品質與穩定度，最多僅能設定 5 組文案。');
-    return;
-  }
-  const s = multiStyleSel.getValue();
-  multiStyles.push(s);
-  renderChips();
-  checkHumorVisibility();
+  if (multiStyles.length >= 5) { alert('上限 5 組'); return; }
+  multiStyles.push(multiStyleSel.getValue());
+  renderChips(); checkHumorVisibility();
 }
-
-function removeStyleChip(index) {
-  multiStyles.splice(index, 1);
-  renderChips();
-  checkHumorVisibility();
-}
-
+function removeStyleChip(index) { multiStyles.splice(index, 1); renderChips(); checkHumorVisibility(); }
 function renderChips() {
   const c = document.getElementById('style-chip-container');
   const counter = document.getElementById('multi-style-counter');
-  
   if (multiStyles.length === 0) {
-    c.innerHTML = '<span class="hint" style="margin:auto; color:var(--text-hint);">目前尚未加入任何風格，請從上方選擇並加入。</span>';
-    counter.textContent = '將產出 0 組文案 (上限 5 組)';
+    c.innerHTML = '<span class="hint" style="margin:auto; color:var(--text-hint);">尚未加入風格</span>';
+    counter.textContent = '將產出 0 組 (上限 5 組)';
     return;
   }
-  c.innerHTML = multiStyles.map((s, i) => 
-    `<div class="style-chip">${s} <span class="del-chip" onclick="removeStyleChip(${i})">✖</span></div>`
-  ).join('');
-  counter.textContent = `將產出 ${multiStyles.length} 組文案 (上限 5 組)`;
+  c.innerHTML = multiStyles.map((s, i) => `<div class="style-chip">${s} <span class="del-chip" onclick="removeStyleChip(${i})">✖</span></div>`).join('');
+  counter.textContent = `將產出 ${multiStyles.length} 組 (上限 5 組)`;
 }
-
 function checkHumorVisibility() {
   const box = document.getElementById('global-humor-box');
-  const needsHumor = (currentMode === 1 && mode1StyleSel.getValue() === '幽默感') || 
-                     (currentMode !== 1 && multiStyles.includes('幽默感'));
+  const needsHumor = (currentMode === 1 && mode1StyleSel.getValue() === '幽默感') || (currentMode !== 1 && multiStyles.includes('幽默感'));
   box.style.display = needsHumor ? 'flex' : 'none';
 }
-
 function saveKey() {
   const v = document.getElementById('api-key').value.trim();
-  if (!v || !v.startsWith('AIza')) { 
-    alert('請輸入正確的 API Key'); 
-    return; 
-  }
-  apiKey = v;
-  document.getElementById('api-key').value = '••••••••••••••••••••••••••••••';
+  if (!v.startsWith('AIza')) { alert('API Key 格式錯誤'); return; }
+  apiKey = v; document.getElementById('api-key').value = '••••••••••••••••••••••••••••••';
   document.getElementById('key-status').style.display = 'block';
-  document.getElementById('key-error').style.display = 'none';
 }
 
 // ============================================================================
-// 產出主邏輯
+// 產出
 // ============================================================================
-function getCharCount(str) {
-  let l = 0; 
-  for (let i = 0; i < str.length; i++) {
-    l += str.charCodeAt(i) > 255 ? 1 : 0.5; 
-  }
-  return Math.ceil(l);
-}
+function getCharCount(str) { let l = 0; if(!str) return 0; for (let i = 0; i < str.length; i++) l += str.charCodeAt(i) > 255 ? 1 : 0.5; return Math.ceil(l); }
 
 async function fetchHumorSearch(query) {
-  const prompt = `你是台灣社群迷因研究員。任務：搜尋「${query}」，找出目前台灣網路上最紅的流行語或哏。回傳格式：列出 3-5 個具體的梗與使用情境，並給出行銷建議。`;
-  
+  const prompt = `你是台灣社群迷因研究員。任務：搜尋「${query}」，找出最新梗。回傳梗的內容與情境。`;
   const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`, {
-    method: 'POST', 
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ 
-      contents: [{ role: 'user', parts: [{ text: prompt }] }], 
-      tools: [{ google_search: {} }] 
-    })
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], tools: [{ google_search: {} }] })
   });
-  
   const data = await res.json();
-  if (data.error) throw new Error(data.error.message);
-  
-  return data.candidates?.[0]?.content?.parts?.filter(p => p.text).map(p => p.text).join('\n').trim() || '';
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 }
 
 async function generate() {
-  if (!apiKey) { 
-    alert('請先輸入並儲存 API Key'); 
-    return; 
-  }
-  
+  if (!apiKey) { alert('請儲存 API Key'); return; }
   const platforms = [...document.querySelectorAll('.platform-btn.active')].map(b => b.dataset.p);
-  if (!platforms.length) { 
-    alert('請至少選擇一個平台'); 
-    return; 
-  }
-
-  // 驗證輸入
-  const mode1VarValue = currentMode === 1 ? mode1VariableSel.getValue().trim() : '';
-  if (currentMode === 1 && !mode1VarValue) {
-    alert('模式一請輸入或選擇測試變因！'); 
-    return;
-  }
-  
-  if (currentMode !== 1 && multiStyles.length === 0) {
-    alert('請至少加入一組風格標籤！'); 
-    return;
-  }
+  if (!platforms.length) { alert('請選擇平台'); return; }
 
   const btn = document.getElementById('gen-btn');
-  btn.disabled = true; 
-  btn.textContent = '引擎運算中...';
-  
+  btn.disabled = true; btn.textContent = '運算中...';
   const resContent = document.getElementById('result-content');
   document.getElementById('result-area').style.display = 'block';
-  resContent.innerHTML = `<div class="loading-step active"><span class="step-icon">⏳</span><span>分析需求與產出文案中<span class="loading-dots"></span></span></div>`;
+  resContent.innerHTML = `<div class="loading-step active"><span class="step-icon">⏳</span><span>分析需求中...</span></div>`;
 
   try {
-    // 幽默感處理
     let humorData = '';
-    const needsHumor = (currentMode === 1 && mode1StyleSel.getValue() === '幽默感') || 
-                       (currentMode !== 1 && multiStyles.includes('幽默感'));
-                       
+    const needsHumor = (currentMode === 1 && mode1StyleSel.getValue() === '幽默感') || (currentMode !== 1 && multiStyles.includes('幽默感'));
     if (needsHumor) {
       const q = document.getElementById('global-humor-material').value.trim();
-      const doSearch = document.getElementById('global-humor-search').checked;
-      
-      if (q) {
-        if (doSearch) {
-          resContent.innerHTML = `<div class="loading-step active"><span class="step-icon">🔍</span><span>上網搜尋梗圖趨勢：「${q}」<span class="loading-dots"></span></span></div>`;
-          humorData = `【幽默感專屬參考資料】\n` + await fetchHumorSearch(q);
-        } else {
-          humorData = `【幽默感指定素材】：${q}`;
-        }
+      if (q && document.getElementById('global-humor-search').checked) {
+        humorData = `【幽默素材參考】：` + await fetchHumorSearch(q);
+      } else if (q) {
+        humorData = `【幽默指定素材】：${q}`;
       }
     }
-    
-    resContent.innerHTML = `<div class="loading-step active"><span class="step-icon">⏳</span><span>Gemini 撰寫文案中<span class="loading-dots"></span></span></div>`;
 
-    // 基礎參數
     const prod = productSel.getValue();
     const conf = PRODUCT_CONFIG[prod];
-    const url = document.getElementById('url').value.trim();
-    const utmName = document.getElementById('utm-name').value.trim() || '__AI_GENERATE__'; 
+    const url = document.getElementById('url').value.trim() || '[網址]';
+    const utmNameInput = document.getElementById('utm-name').value.trim() || '__AI_GENERATE__'; 
     const utmDate = document.getElementById('utm-date').value.trim() || getDefaultDate();
-    
     const groupCode = prod === '大額' ? 'b' : (prod === '小額' ? 's' : '');
-    const utmNameValue = utmName === '__AI_GENERATE__' ? '[AI名稱]' : utmName;
-    const baseUtm = `[網址]?utm_source=[來源]&utm_medium=[媒介]&utm_campaign=richart_${groupCode}loan${utmNameValue}_${utmDate}&utm_content=[內容]`;
 
-    // 組裝 Persona 與全域參數
-    const allPersonas = Object.entries(STYLE_PERSONAS)
-      .map(([k, v]) => `【${k}】\n${v}`)
-      .join('\n\n');
-      
-    let promptLogic = `【所有角色設定】\n${allPersonas}\n\n`;
-    promptLogic += `${SYSTEM_PROMPT_BASE}\n\n`;
-    promptLogic += `【產品參數】
-產品線：${prod}
-利率區間：${conf.disclaimerApr}
-利率寫法：${conf.aprPromo}
-手續費寫法：${conf.feePromo}
-月付/日付寫法：務必加上「起」或「最低」
-${conf.specialRule ? conf.specialRule + '\n' : ''}
-${STYLE_PROMPT_GUIDELINES}
+    const utmCampaign = `richart_${groupCode}loan${utmNameInput==='__AI_GENERATE__'?'[AI名稱]':utmNameInput}_${utmDate}`;
 
-【到達網址】
-格式：${baseUtm}
-${utmName === '__AI_GENERATE__' ? '(需於 JSON 回傳 utm_name_suggestion)' : ''}`;
+    let promptLogic = `【所有角色設定】\n${Object.entries(STYLE_PERSONAS).map(([k, v]) => `【${k}】\n${v}`).join('\n\n')}\n\n`;
+    promptLogic += `${SYSTEM_PROMPT_BASE}\n\n【產品參數】\n產品線：${prod}\n利率寫法：${conf.aprPromo}\n手續費寫法：${conf.feePromo}\n${conf.specialRule || ''}\n\n`;
+    
+    promptLogic += `【UTM 規則 (修正版)】
+1. 原始網址為：「${url}」。
+2. 組合格式：${url}?utm_source=[來源]&utm_medium=[媒介]&utm_campaign=${utmCampaign}&utm_content=[內容]
+3. [內容] 必須嚴格遵守以下拼裝邏輯：
+   - 前綴格式：推播/簡訊/BTS = textlink | EDM = button | 其餘 = banner
+   - 後綴格式：模式一 A版為「_a_[變因]」，B版為「_b_[變因]」；模式二/三 為「_g[N]_[簡寫]」
+   - 範例：banner_g1_fast (不可帶入日期或重複 campaign 內容)
+4. ⚠️ 推播(Push)：嚴禁包含網址連結或 UTM 參數。
+5. ⚠️ Meta/FB：內文最慢「第三句」就要出現帶 UTM 的連結。`;
 
-    // 依據模式動態切換核心指令
     if (currentMode === 1) {
-      const style = mode1StyleSel.getValue();
-      const variable = mode1VarValue;
-      promptLogic += `\n\n【產出任務：同風格 A/B 測試】
-      1. 指定風格：${style}
-      2. 測試變因：${variable}
-      3. 任務：產出【A版】與【B版】兩組。
-      4. ⚠️防幻覺鐵律：A版與B版的句型結構、語感與整體架構必須 90% 一致！『僅能』因應上述「測試變因」去替換或增減直接相關的字詞。絕對不可兩版各說各話。
-      5. UTM 規定：網址 utm_content 參數後方，A版必須附加「_a_[變因簡寫]」，B版必須附加「_b_[變因簡寫]」。(變因簡寫請以全小寫英文發想)`;
-    } 
-    else if (currentMode === 2) {
-      promptLogic += `\n\n【產出任務：不同風格統一切角 (風格 A/B 測試)】
-      1. 指定風格清單：${multiStyles.join('、')} (共 ${multiStyles.length} 組)
-      2. 任務：依序為上述每個風格產出一組文案。
-      3. ⚠️防幻覺鐵律：這是在測試哪種語氣最有效，因此所有組別【必須主打完全相同的產品特性與痛點】。唯一的差異只有「文案風格語氣」。
-      4. UTM 規定：網址 utm_content 參數後方，必須附加「_g1_[風格簡寫]」、「_g2_[風格簡寫]」等標示。(風格簡寫請以全小寫英文發想)`;
-    }
-    else if (currentMode === 3) {
-      promptLogic += `\n\n【產出任務：多風格自由發想 (切角各自不同)】
-      1. 指定風格清單：${multiStyles.join('、')} (共 ${multiStyles.length} 組)
-      2. 任務：依序為上述每個風格產出一組文案。
-      3. ⚠️自由發想鐵律：請為【每一組】安排「截然不同的」產品特性、切角或痛點來發揮，並結合指定的文案風格，極大化產出多樣性，不要大家都講同一件事。
-      4. UTM 規定：網址 utm_content 參數後方，必須附加「_g1_[切角簡寫]」、「_g2_[切角簡寫]」等標示。(切角簡寫請依據該組主打賣點以全小寫英文發想)`;
+      promptLogic += `\n\n【模式一：同風格 A/B 測試】\n測試風格：${mode1StyleSel.getValue()}\n測試變因：${mode1VariableSel.getValue()}\n要求：產出 A/B 版，語感與結構需 90% 一致，僅抽換變因字詞。`;
+    } else if (currentMode === 2) {
+      promptLogic += `\n\n【模式二：不同風格統一切角】\n指定風格：${multiStyles.join(', ')}\n要求：所有組別主打「完全相同」的產品特性，僅用語氣區隔。`;
+    } else {
+      promptLogic += `\n\n【模式三：各自切角自由發想】\n指定風格：${multiStyles.join(', ')}\n要求：每組發揮不同的產品特色與痛點。`;
     }
 
-    const userMsg = `客群：${audienceSel.getValue()}(${customerTypeSel.getValue()})
-痛點：${painpointSel.getValue()}
-架構：${frameworkSel.getValue()}
-促購：${promoSel.getValue()}
-網址：${url || '無'}
+    const userMsg = `目標客群：${audienceSel.getValue()}\n痛點：${painpointSel.getValue()}\n架構：${frameworkSel.getValue()}\n促購：${promoSel.getValue()}\n\n${humorData}\n\n請產出以下平台：\n${platforms.map(p => `- ${p}：${PLATFORM_SPECS[p]}`).join('\n')}`;
 
-${humorData}
-
-請為以下平台產出：
-${platforms.map(p => `- ${p}：${PLATFORM_SPECS[p]}`).join('\n')}`;
-
-    // 發送 API 請求
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`, {
-      method: 'POST', 
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        systemInstruction: { parts: [{ text: promptLogic }] },
+        systemInstruction: { parts: [{ text: promptLogic + STYLE_PROMPT_GUIDELINES }] },
         contents: [{ role: 'user', parts: [{ text: userMsg }] }],
         generationConfig: {
           responseMimeType: 'application/json',
@@ -725,24 +545,11 @@ ${platforms.map(p => `- ${p}：${PLATFORM_SPECS[p]}`).join('\n')}`;
                   type: 'OBJECT',
                   properties: {
                     platform: { type: 'STRING' },
-                    fields: { 
-                      type: 'ARRAY', 
-                      items: { 
-                        type: 'OBJECT', 
-                        properties: { 
-                          name: { type: 'STRING' }, 
-                          content: { type: 'STRING' }, 
-                          analysis: { type: 'STRING' } 
-                        }, 
-                        required: ['name', 'content'] 
-                      } 
-                    }
-                  }, 
-                  required: ['platform', 'fields']
+                    fields: { type: 'ARRAY', items: { type: 'OBJECT', properties: { name: { type: 'STRING' }, content: { type: 'STRING' }, analysis: { type: 'STRING' } }, required: ['name', 'content'] } }
+                  }, required: ['platform', 'fields']
                 }
               }
-            }, 
-            required: ['results']
+            }, required: ['results']
           }
         }
       })
@@ -750,190 +557,108 @@ ${platforms.map(p => `- ${p}：${PLATFORM_SPECS[p]}`).join('\n')}`;
 
     const data = await res.json();
     if (data.error) throw new Error(data.error.message);
-    
-    const rawText = data.candidates[0].content.parts[0].text;
-    const cleanedText = rawText.replace(/^```(json)?\n?|```$/gm, '').trim();
-    const parsed = JSON.parse(cleanedText);
-    
+    const parsed = JSON.parse(data.candidates[0].content.parts[0].text.replace(/^```(json)?\n?|```$/gm, '').trim());
     resultData = parsed.results;
 
-    if (utmName === '__AI_GENERATE__' && parsed.utm_name_suggestion) {
+    if (utmNameInput === '__AI_GENERATE__' && parsed.utm_name_suggestion) {
       document.getElementById('utm-name').value = parsed.utm_name_suggestion.toLowerCase().replace(/[^a-z0-9_]/g, '');
     }
-    
     renderResults(resultData);
 
   } catch(e) {
     resContent.innerHTML = `<div class="error-box"><b>❌ 產出失敗</b><br>${e.message}</div>`;
-  } finally {
-    btn.disabled = false; 
-    btn.textContent = '重新產出';
-  }
+  } finally { btn.disabled = false; btn.textContent = '重新產出'; }
 }
 
-function escapeHTML(str) { 
-  return str.replace(/[&<>'"]/g, tag => ({ 
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' 
-  }[tag])); 
-}
+function escapeHTML(str) { return str.replace(/[&<>'"]/g, t => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[t])); }
 
 function renderResults(results) {
   let html = '';
-  results.forEach((r, pIndex) => {
-    html += `
-    <div class="result-block">
-      <div class="platform-label">${r.platform}</div>
-      <div class="result-table-wrap">
-        <table>
-          <thead>
-            <tr><th>欄位</th><th>文案與分析</th></tr>
-          </thead>
-          <tbody>`;
-          
-    r.fields.forEach((f, fIndex) => {
-      const cellId = `cell-${pIndex}-${fIndex}`;
-      html += `
-        <tr>
-          <td>
-            ${f.name}<br>
-            <span style="color:var(--text-hint);font-size:11px;">${getCharCount(f.content)} 字</span>
-          </td>
-          <td id="${cellId}" data-original="${escapeHTML(f.content)}">
-             <div class="content-text">${escapeHTML(f.content)}</div>
-             ${f.analysis ? `<div class="analysis-box">💡 <b>解析：</b>${escapeHTML(f.analysis)}</div>` : ''}
-             ${!f.name.includes('品質審查') ? `<button class="ab-test-btn" onclick="openABModal('${cellId}')">⚖️ 單筆延伸 A/B Test</button>` : ''}
-          </td>
-        </tr>`;
+  results.forEach((r, pI) => {
+    html += `<div class="result-block"><div class="platform-label">${r.platform}</div><div class="result-table-wrap"><table><thead><tr><th>欄位</th><th>文案內容與分析</th></tr></thead><tbody>`;
+    r.fields.forEach((f, fI) => {
+      const cellId = `cell-${pI}-${fI}`;
+      html += `<tr><td>${f.name}<br><span style="color:var(--text-hint);font-size:11px;">${getCharCount(f.content)} 字</span></td>
+               <td id="${cellId}" data-original="${escapeHTML(f.content)}">
+                 <div class="content-text">${escapeHTML(f.content)}</div>
+                 ${f.analysis ? `<div class="analysis-box">💡 <b>解析：</b>${escapeHTML(f.analysis)}</div>` : ''}
+                 ${!f.name.includes('品質審查') ? `<button class="ab-test-btn" onclick="openABModal('${cellId}')">⚖️ 延伸 A/B Test</button>` : ''}
+               </td></tr>`;
     });
-    
-    html += `
-          </tbody>
-        </table>
-      </div>
-    </div>`;
+    html += `</tbody></table></div></div>`;
   });
   document.getElementById('result-content').innerHTML = html;
 }
 
-// ============================================================================
-// 單筆 A/B Test 延伸
-// ============================================================================
+// 延伸 A/B Test
 let currentABCellId = '';
-
-function openABModal(id) { 
-  currentABCellId = id; 
-  document.getElementById('ab-modal').style.display = 'flex'; 
-  document.getElementById('ab-variable-input').value = ''; 
-}
-
-function closeABModal() { 
-  document.getElementById('ab-modal').style.display = 'none'; 
-}
+function openABModal(id) { currentABCellId = id; document.getElementById('ab-modal').style.display = 'flex'; }
+function closeABModal() { document.getElementById('ab-modal').style.display = 'none'; }
 
 async function confirmABTest() {
-  const variable = document.getElementById('ab-variable-input').value.trim();
-  if (!variable) { 
-    alert('請輸入測試變因'); 
-    return; 
-  }
-  
+  const v = document.getElementById('ab-variable-input').value.trim();
+  if (!v) return;
   const cell = document.getElementById(currentABCellId);
   const baseText = cell.getAttribute('data-original');
   const btn = cell.querySelector('.ab-test-btn');
-  
-  btn.textContent = '⏳ 運算中...'; 
-  btn.disabled = true; 
-  closeABModal();
+  btn.textContent = '⏳ ...'; btn.disabled = true; closeABModal();
 
-  const prompt = `你是一個 A/B Test 專家。
-【基底文案(A版)】：
-${baseText}
-
-【測試變因】：${variable}
-
-任務：
-1. 以基底文案為 A版。
-2. 針對測試變因產出對照的 B版。
-3. ⚠️鐵律：A/B版句型結構與字數需 90% 一致，『僅能』替換變因相關字詞。
-4. UTM：A版網址附加「_a_[變因簡寫]」，B版附加「_b_[變因簡寫]」。`;
+  const prompt = `你是一個 A/B Test 專家。以以下文案為 A 版，針對測試變因「${v}」產出 B 版對照組。
+鐵律：A/B 版句型語感需 90% 一致，僅抽換變因字詞。
+若內容中有網址，A版 UTM 後綴加 _a_[簡寫]，B版加 _b_[簡寫]。\n\n【A版】：\n${baseText}`;
 
   try {
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`, {
-      method: 'POST', 
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: { 
-          responseMimeType: 'application/json', 
-          responseSchema: { 
-            type: 'OBJECT', 
-            properties: { 
-              a_version: { type: 'STRING' }, 
-              b_version: { type: 'STRING' }, 
-              analysis: { type: 'STRING' } 
-            }, 
-            required: ['a_version', 'b_version', 'analysis'] 
-          } 
-        }
+        generationConfig: { responseMimeType: 'application/json', responseSchema: { type: 'OBJECT', properties: { a_version: { type: 'STRING' }, b_version: { type: 'STRING' }, analysis: { type: 'STRING' } }, required: ['a_version', 'b_version', 'analysis'] } }
       })
     });
+    const d = await res.json();
+    const p = JSON.parse(d.candidates[0].content.parts[0].text.replace(/^```(json)?\n?|```$/gm, '').trim());
     
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message);
+    cell.innerHTML = `<div class="ab-result-container"><div class="ab-version-box ab-version-a"><span class="ab-label">A版</span><br>${escapeHTML(p.a_version)}</div>
+                      <div class="ab-version-box ab-version-b"><span class="ab-label">B版 (${escapeHTML(v)})</span><br>${escapeHTML(p.b_version)}</div>
+                      <div class="analysis-box" style="margin-top:0;">💡 <b>差異：</b>${escapeHTML(p.analysis)}</div></div>
+                      <button class="ab-test-btn" onclick="openABModal('${currentABCellId}')">🔄 重新調整變因</button>`;
     
-    const rawText = data.candidates[0].content.parts[0].text;
-    const parsed = JSON.parse(rawText.replace(/^```(json)?\n?|```$/gm, '').trim());
-    
-    cell.innerHTML = `
-      <div class="ab-result-container">
-        <div class="ab-version-box ab-version-a">
-          <span class="ab-label">A版</span><br>${escapeHTML(parsed.a_version)}
-        </div>
-        <div class="ab-version-box ab-version-b">
-          <span class="ab-label">B版 (${escapeHTML(variable)})</span><br>${escapeHTML(parsed.b_version)}
-        </div>
-        <div class="analysis-box" style="margin-top:0;">
-          💡 <b>差異：</b>${escapeHTML(parsed.analysis)}
-        </div>
-      </div>
-      <button class="ab-test-btn" onclick="openABModal('${currentABCellId}')">🔄 重新調整變因</button>`;
-      
-    cell.setAttribute('data-original', `【A版】\n${parsed.a_version}\n\n【B版】\n${parsed.b_version}`);
-    
-  } catch(e) { 
-    alert('失敗：' + e.message); 
-    btn.textContent = '⚖️ 延伸 A/B Test'; 
-    btn.disabled = false; 
-  }
+    cell.setAttribute('data-is-extended', 'true');
+    cell.setAttribute('data-v-a', p.a_version);
+    cell.setAttribute('data-v-b', p.b_version);
+    cell.setAttribute('data-v-analysis', p.analysis);
+  } catch(e) { alert(e.message); btn.textContent = '⚖️ 延伸 A/B Test'; btn.disabled = false; }
 }
 
-// ============================================================================
-// 下載 Excel
-// ============================================================================
 function downloadExcel() {
   if (!resultData.length) return alert('無資料');
-  
   const wb = XLSX.utils.book_new();
-  
   document.querySelectorAll('.result-block').forEach(block => {
-    const pName = block.querySelector('.platform-label').innerText;
+    const pRaw = block.querySelector('.platform-label').innerText;
+    const pName = pRaw.replace(/[\\/*?:[\]]/g, '_').substring(0, 31);
     const rows = [['欄位', '文案內容', '字數(LEN)', '行銷切角解析']];
     
-    block.querySelectorAll('tbody tr').forEach((tr, i) => {
+    block.querySelectorAll('tbody tr').forEach(tr => {
       const field = tr.querySelector('td:first-child').innerText.split('\n')[0];
       const cell = tr.querySelector('td:nth-child(2)');
-      let content = cell.getAttribute('data-original') || '';
-      let analysis = cell.querySelector('.analysis-box') ? 
-                     cell.querySelector('.analysis-box').innerText.replace(/💡 (切角解析|差異|解析)：/, '').trim() : '';
       
-      rows.push([field, content, { f: `LEN(B${i + 2})` }, analysis]);
+      if (cell.getAttribute('data-is-extended') === 'true') {
+        const va = cell.getAttribute('data-v-a');
+        const vb = cell.getAttribute('data-v-b');
+        const ana = cell.getAttribute('data-v-analysis');
+        rows.push([field + ' (A版)', va, va.length, '延伸 A/B Test 基底']);
+        rows.push([field + ' (B版)', vb, vb.length, '差異：' + ana]);
+      } else {
+        const content = cell.getAttribute('data-original') || '';
+        const analysis = cell.querySelector('.analysis-box') ? cell.querySelector('.analysis-box').innerText.replace(/💡 解析：/, '').trim() : '';
+        rows.push([field, content, content.length, analysis]);
+      }
     });
     
     const ws = XLSX.utils.aoa_to_sheet(rows); 
     ws['!cols'] = [{wch:18}, {wch:70}, {wch:10}, {wch:40}];
-    XLSX.utils.book_append_sheet(wb, ws, pName.substring(0,31));
+    XLSX.utils.book_append_sheet(wb, ws, pName);
   });
-  
   XLSX.writeFile(wb, `Richart文案_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 </script>
